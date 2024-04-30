@@ -1,0 +1,35 @@
+---
+BasedOnStyle: Google
+
+PointerAlignment: Left
+QualifierAlignment: Right
+ReferenceAlignment: Left
+
+IncludeBlocks: Regroup
+SortIncludes: true
+SortUsingDeclarations: true
+
+AccessModifierOffset: -4
+ConstructorInitializerIndentWidth: 8
+ContinuationIndentWidth: 8
+IndentWidth: 4
+MaxEmptyLinesToKeep: 1
+InsertNewlineAtEOF: true
+UseTab: Never
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 2
+PackConstructorInitializers: NextLineOnly
+BreakConstructorInitializers: BeforeComma
+BinPackArguments: false
+BinPackParameters: false
+AllowAllConstructorInitializersOnNextLine: true
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
+SpaceAfterCStyleCast: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+PenaltyExcessCharacter: 10
+PenaltyReturnTypeOnItsOwnLine: 20

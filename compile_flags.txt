@@ -1,0 +1,15 @@
+-xc++
+-std=gnu++23
+-g1
+-Og
+-Wall
+-Wextra
+-Werror
+-Wno-unused
+-Wno-unused-command-line-argument
+-Wno-c99-designator
+-Wno-vla-cxx-extension
+-march=native
+-fno-rtti
+-fno-exceptions
+-UNDEBUG
