@@ -14,29 +14,29 @@ testT: build/StringTests.T
 testU: build/StringTests.U
 	./build/StringTests.U
 
-build/StringTests.A: builddir StringTests.cc String.h
+build/StringTests.A: builddir test/StringTests.cc src/**/*.h
 	clang++ @compile_flags.txt @debugging_flags.txt \
 		-fsanitize=address \
 		-o build/StringTests.A \
-		StringTests.cc
+		test/StringTests.cc
 
-build/StringTests.M: builddir StringTests.cc String.h
+build/StringTests.M: builddir test/StringTests.cc src/**/*.h
 	clang++ @compile_flags.txt @debugging_flags.txt \
 		-fsanitize=memory \
 		-o build/StringTests.M \
-		StringTests.cc
+		test/StringTests.cc
 
-build/StringTests.T: builddir StringTests.cc String.h
+build/StringTests.T: builddir test/StringTests.cc src/**/*.h
 	clang++ @compile_flags.txt @debugging_flags.txt \
 		-fsanitize=thread \
 		-o build/StringTests.T \
-		StringTests.cc
+		test/StringTests.cc
 
-build/StringTests.U: builddir StringTests.cc String.h
+build/StringTests.U: builddir test/StringTests.cc src/**/*.h
 	clang++ @compile_flags.txt @debugging_flags.txt \
 		-fsanitize=undefined \
 		-o build/StringTests.U \
-		StringTests.cc
+		test/StringTests.cc
 
 builddir:
 	mkdir -p build

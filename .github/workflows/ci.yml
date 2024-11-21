@@ -8,12 +8,12 @@ on:
 
 jobs:
   build:
-    runs-on: alpine-latest
+    runs-on: ubuntu-24.04
     steps:
     - name: checkout
       uses: actions/checkout@v4
-    - name: updateClang
-      run: sudo apk add clang make
+    - name: info
+      run: clang++ --version
     - name: testA
       run: make testA
     - name: testM

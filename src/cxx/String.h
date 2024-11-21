@@ -2,12 +2,12 @@
 // Copyright (c) 2024 Steve O'Brien
 // MIT Licensed
 
-#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
+#include "Ref.h"
 #include "Util.h"
 
 namespace cxx {
@@ -18,7 +18,7 @@ enum class Type : int { TINY = 0, LITERAL = 1, SHARED = 2 };
 
 struct SharedData final {
     int64_t size_ {0};
-    [[gnu::aligned(8)]] uint64_t mutable uses_ {0};
+    internal::RefCount rc_;
     char cstr_;  // first char; this struct is over-allocated
 
     ~SharedData() = delete;
@@ -28,24 +28,20 @@ struct SharedData final {
         auto full = sizeof(SharedData) + size;
         SharedData* ret = (SharedData*) malloc(full);
         ret->size_ = size;
-        ret->uses_ = 1;
+        ret->rc_ = 1;
         ce_strncpy(&ret->cstr_, src, size);
         return ret;
     }
 
     void destroy() const {
-        assert(uses_ == 0);
+        assert(!rc_);
         free((void*) this);
     }
 
-    void take() const {
-        auto& uses = *(std::atomic<uint64_t>*) (&uses_);
-        ++uses;
-    }
+    void take() const { rc_.inc(); }
 
     void drop() const {
-        auto& uses = *(std::atomic<uint64_t>*) (&uses_);
-        if ((--uses) == 0) { destroy(); }
+        if (rc_.dec()) { destroy(); }
     }
 };
 
@@ -62,7 +58,7 @@ struct Shared {
     SharedData* shared;
 };
 
-struct [[gnu::packed]] Data {
+struct Data {
     int64_t size_;
     union {
         Tiny tiny;
@@ -181,5 +177,6 @@ struct String final {
 
     constexpr char const& operator[](size_t i) const { return *(data() + i); }
 };
+static_assert(sizeof(String) == stringdetail::kDataSize);
 
 }  // namespace cxx

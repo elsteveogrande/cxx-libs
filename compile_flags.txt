@@ -13,3 +13,5 @@
 -fno-rtti
 -fno-exceptions
 -UNDEBUG
+-isystem
+src

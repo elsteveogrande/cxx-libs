@@ -1,3 +1,5 @@
+#include <cxx/String.h>
+
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -5,8 +7,6 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
-
-#include "String.h"
 
 using cxx::String;
 using cxx::stringdetail::Type;
