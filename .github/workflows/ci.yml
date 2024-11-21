@@ -13,10 +13,10 @@ jobs:
     - name: checkout
       uses: actions/checkout@v4
     - name: aptUpdate
-      run: sudo apt -y install clang-18
+      run: sudo apt -y install clang
     - name: aptAlternativeC
-      run: sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+      run: sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 100
     - name: aptAlternativeCXX
-      run: sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+      run: sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 100
     - name: make test
       run: make test
