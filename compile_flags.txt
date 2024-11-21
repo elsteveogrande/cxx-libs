@@ -8,7 +8,7 @@
 -Wno-unused
 -Wno-unused-command-line-argument
 -Wno-c99-designator
--Wno-vla-cxx-extension
+-Wno-vla-extension
 -march=native
 -fno-rtti
 -fno-exceptions
