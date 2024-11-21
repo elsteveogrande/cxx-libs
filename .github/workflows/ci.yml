@@ -14,11 +14,11 @@ jobs:
       uses: actions/checkout@v4
     - name: updateClang
       run: sudo apk add clang make
-    - name: make test testA
-      run: make test testA
-    - name: make test testM
-      run: make test testM
-    - name: make test testT
-      run: make test testT
-    - name: make test testU
-      run: make test testU
+    - name: testA
+      run: make testA
+    - name: testM
+      run: make testM
+    - name: testT
+      run: make testT
+    - name: testU
+      run: make testU
