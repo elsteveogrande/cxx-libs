@@ -1,5 +1,5 @@
 -xc++
--std=gnu++23
+-std=gnu++2b
 -g1
 -Og
 -Wall
