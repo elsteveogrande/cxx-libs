@@ -8,15 +8,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: alpine-latest
     steps:
     - name: checkout
       uses: actions/checkout@v4
-    - name: aptUpdate
-      run: sudo apt -y install clang
-    - name: aptAlternativeC
-      run: sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
-    - name: aptAlternativeCXX
-      run: sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
-    - name: make test
-      run: make test
+    - name: updateClang
+      run: sudo apk add clang make
+    - name: make test testA
+      run: make test testA
+    - name: make test testM
+      run: make test testM
+    - name: make test testT
+      run: make test testT
+    - name: make test testU
+      run: make test testU

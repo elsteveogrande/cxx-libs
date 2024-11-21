@@ -1,9 +1,12 @@
 all:
 
-test: testA testT testU
+test: testA testT testU  # testM doesn't work on OSX :(
 
 testA: build/StringTests.A
 	./build/StringTests.A
+
+testM: build/StringTests.M
+	./build/StringTests.M
 
 testT: build/StringTests.T
 	./build/StringTests.T
