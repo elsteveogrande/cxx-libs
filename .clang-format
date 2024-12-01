@@ -1,5 +1,5 @@
 ---
-BasedOnStyle: Google
+BasedOnStyle: LLVM
 
 PointerAlignment: Left
 QualifierAlignment: Right
@@ -16,20 +16,40 @@ IndentWidth: 4
 MaxEmptyLinesToKeep: 1
 InsertNewlineAtEOF: true
 UseTab: Never
+BraceWrapping:
+  AfterClass: false
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: WithoutElse
 SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCpp11BracedList: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
 SpacesBeforeTrailingComments: 2
-PackConstructorInitializers: NextLineOnly
 BreakConstructorInitializers: BeforeComma
 BinPackArguments: false
 BinPackParameters: false
-AllowAllConstructorInitializersOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: false
 AllowShortBlocksOnASingleLine: true
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCaseColons: false
+
 SpaceAfterCStyleCast: true
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
-PenaltyExcessCharacter: 10
-PenaltyReturnTypeOnItsOwnLine: 20
+PackConstructorInitializers: NextLine
+RequiresClausePosition: SingleLine
+
+PenaltyBreakBeforeFirstCallParameter: 200
+PenaltyBreakComment:                  100
+PenaltyBreakFirstLessLess:            300
+PenaltyBreakOpenParenthesis:          200
+PenaltyBreakScopeResolution:          300
+PenaltyBreakString:                   100
+PenaltyBreakTemplateDeclaration:      200
+PenaltyExcessCharacter:               100
+PenaltyIndentedWhitespace:            400
+PenaltyReturnTypeOnItsOwnLine:        300

@@ -1,5 +1,5 @@
 -xc++
--std=gnu++2b
+-std=gnu++23
 -g1
 -Og
 -Wall
@@ -9,9 +9,11 @@
 -Wno-unused-command-line-argument
 -Wno-c99-designator
 -Wno-vla-extension
+-Wno-gnu-alignof-expression
+-Wno-gnu-array-member-paren-init
+-fexceptions
+-frtti
 -march=native
--fno-rtti
--fno-exceptions
 -UNDEBUG
 -isystem
 src

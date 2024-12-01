@@ -1,4 +1,6 @@
-#include <cxx/String.h>
+// Only include the header being tested; this single standalone include
+// should work without needing other headers.
+#include "cxx/String.h"
 
 #include <cassert>
 #include <cstdint>
@@ -13,11 +15,11 @@ using cxx::stringdetail::Type;
 
 namespace {
 
-constexpr char const *kLongStringLiteral = "stringWhichHasThirtyCharacters";
+constexpr char const* kLongStringLiteral = "stringWhichHasThirtyCharacters";
 
 struct L {
     int const n;
-    friend std::ostream &operator<<(std::ostream &os, L const &x) {
+    friend std::ostream& operator<<(std::ostream& os, L const& x) {
         os << std::setw(x.n) << std::left;
         return os;
     }
@@ -25,45 +27,44 @@ struct L {
 
 struct R {
     int const n;
-    friend std::ostream &operator<<(std::ostream &os, R const &x) {
+    friend std::ostream& operator<<(std::ostream& os, R const& x) {
         os << std::setw(x.n) << std::right;
         return os;
     }
 };
 
-void dump(char const *where, String const &s) {
+void dump(char const* where, String const& s) {
     std::cerr << "@@@ " << L {40} << where << ": " << &s << ":";
     std::cerr << " type:" << int(s.data_.type());
     switch (s.data_.type()) {
-        case Type::TINY:
-            std::cerr << " (TINY)    "
-                      << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                      << R {3} << s.size() << ")"
-                      << " ptr:" << R {12} << std::hex
-                      << std::intptr_t(s.data_.cstr()) << " \""
-                      << s.data_.cstr() << '"';
-            break;
+    case Type::TINY:
+        std::cerr
+                << " (TINY)    "
+                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
+                << R {3} << s.size() << ")"
+                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
+                << " \"" << s.data_.cstr() << '"';
+        break;
 
-        case Type::LITERAL:
-            std::cerr << " (LITERAL) "
-                      << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                      << R {3} << s.size() << ")"
-                      << " ptr:" << R {12} << std::hex
-                      << std::intptr_t(s.data_.cstr()) << " \""
-                      << s.data_.cstr() << '"';
-            break;
+    case Type::LITERAL:
+        std::cerr
+                << " (LITERAL) "
+                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
+                << R {3} << s.size() << ")"
+                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
+                << " \"" << s.data_.cstr() << '"';
+        break;
 
-        case Type::SHARED:
-            std::cerr << " (SHARED)  "
-                      << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                      << R {3} << s.size() << ")"
-                      << " ptr:" << R {12} << std::hex
-                      << std::intptr_t(s.data_.cstr()) << " \""
-                      << s.data_.cstr() << '"';
-            break;
+    case Type::SHARED:
+        std::cerr
+                << " (SHARED)  "
+                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
+                << R {3} << s.size() << ")"
+                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
+                << " \"" << s.data_.cstr() << '"';
+        break;
 
-        default:
-            std::unreachable();
+    default: std::unreachable();
     }
     std::cerr << std::endl;
 }
@@ -244,6 +245,26 @@ int main() {
         assert('o' == (s1 + s2)[1]);
         assert('o' == (s1 + s2)[2]);
         assert('s' == (s1 + s2)[3]);
+    }
+
+    {
+        String s = "hello world";
+        auto gen = s.split(' ');
+        auto end = gen.end();
+        cxx::String w;
+
+        auto it = gen.begin();
+        w = *it;
+        std::cerr << w << std::endl;
+        assert(w == "hello");
+
+        ++it;
+        w = *it;
+        std::cerr << w << std::endl;
+        assert(w == "world");
+
+        ++it;
+        assert(it == end);
     }
 
     return 0;

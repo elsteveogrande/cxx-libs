@@ -1,48 +1,76 @@
 #pragma once
+static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
+// (c) 2024 Steve O'Brien -- MIT License
 
-#include <atomic>
+#include "Exception.h"
+#include "detail/_ref.h"
+
 #include <cassert>
-#include <cstdint>
+#include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace cxx {
 
-namespace internal {
+template <class T> class Ref final : private detail::RefBase {
 
-struct RefCount {
-    [[gnu::aligned(8)]] uint64_t mutable refs {0};
+public:
+    struct NullRef final : Exception {};
 
-    inline std::atomic<uint64_t>& atomicRefs() const {
-        return *(std::atomic<uint64_t>*) (&(this->refs));
+    ~Ref() noexcept(true) {
+        if (obj_ && dec()) {
+            auto* obj = obj_;
+            obj_ = nullptr;
+            delete obj;
+        }
     }
 
-    void inc() const {
-        auto& refs = atomicRefs();
-        auto old = refs.load(std::memory_order_relaxed);
-        while (!refs.compare_exchange_weak(old,
-                                           old + 1,
-                                           std::memory_order_release,
-                                           std::memory_order_relaxed)) {}
+    Ref(T* obj) noexcept(true) : detail::RefBase(obj) {
+        assert(obj);
+        // obj's `rc` is zero-initialized, which indicates
+        // a reference count of 1; don't increment it.
     }
 
-    bool dec() const {
-        auto& refs = atomicRefs();
-        auto old = refs.load(std::memory_order_relaxed);
-        assert(old);
-        while (!refs.compare_exchange_weak(old,
-                                           old - 1,
-                                           std::memory_order_release,
-                                           std::memory_order_relaxed)) {}
-        return old == 1;  // was 1, and now dropped to 0
+    Ref(Ref<T> const& rhs) noexcept(true) : detail::RefBase(rhs.get()) {
+        inc();
     }
 
-    void operator=(uint64_t newVal) { refs = newVal; }
+    template <typename U>
+    requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
+    operator Ref<U>() {
+        U* obj = (U*) this->rawPointer();
+        inc();
+        return Ref<U>(obj);
+    }
 
-    operator bool() const {
-        return bool(atomicRefs().load(std::memory_order_relaxed));
+    T* get() noexcept(true) { return (T*) rawPointer(); }
+    T const* get() const noexcept(true) { return (T const*) rawPointer(); }
+
+    T* operator->() noexcept(true) { return get(); }
+    T const* operator->() const noexcept(true) { return get(); }
+
+    T& operator*() {
+        if (!rawPointer()) { throw NullRef(); }
+        return *rawPointer();
+    }
+
+    T const& operator*() const {
+        if (!rawPointer()) { throw NullRef(); }
+        return *rawPointer();
     }
 };
-static_assert(sizeof(RefCount) == 8);
 
-}  // namespace internal
+template <typename T> class RefCounted : public detail::RefCountedBase {
+protected:
+    virtual ~RefCounted() = default;
+
+public:
+    Ref<T> ref() noexcept(true) { return Ref((T*) (this)); }
+};
+
+template <typename U, typename... A> static Ref<U> make(A&&... args) {
+    U* ptr = new U(std::forward<A>(args)...);
+    return Ref<U>(ptr);
+}
 
 }  // namespace cxx

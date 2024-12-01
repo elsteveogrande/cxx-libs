@@ -1,120 +1,20 @@
 #pragma once
-// Copyright (c) 2024 Steve O'Brien
-// MIT Licensed
+static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
+// (c) 2024 Steve O'Brien -- MIT License
+
+#include "Generator.h"
+#include "Util.h"
+#include "detail/_string.h"
 
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-
-#include "Ref.h"
-#include "Util.h"
+#include <iostream>
+#include <ostream>
+#include <string>
 
 namespace cxx {
-
-namespace stringdetail {
-
-enum class Type : int { TINY = 0, LITERAL = 1, SHARED = 2 };
-
-struct SharedData final {
-    int64_t size_ {0};
-    internal::RefCount rc_;
-    char cstr_;  // first char; this struct is over-allocated
-
-    ~SharedData() = delete;
-    SharedData(SharedData const&) = delete;
-
-    static SharedData* create(size_t size, char const* src) {
-        auto full = sizeof(SharedData) + size;
-        SharedData* ret = (SharedData*) malloc(full);
-        ret->size_ = size;
-        ret->rc_ = 1;
-        ce_strncpy(&ret->cstr_, src, size);
-        return ret;
-    }
-
-    void destroy() const {
-        assert(!rc_);
-        free((void*) this);
-    }
-
-    void take() const { rc_.inc(); }
-
-    void drop() const {
-        if (rc_.dec()) { destroy(); }
-    }
-};
-
-static constexpr int kDataSize = 16;
-static constexpr int kTinyLimit = kDataSize - sizeof(int64_t);
-
-struct Tiny {
-    char chars[kTinyLimit] {0};
-};
-struct Literal {
-    char const* cstr;
-};
-struct Shared {
-    SharedData* shared;
-};
-
-struct Data {
-    int64_t size_;
-    union {
-        Tiny tiny;
-        Literal lit;
-        Shared sh;
-    };
-
-    constexpr Type type() const {
-        if (size_ < 0) { return Type::SHARED; }
-        if (size_ < 8) { return Type::TINY; }
-        return Type::LITERAL;
-    }
-
-    constexpr size_t size() const { return abs(size_); }
-
-    constexpr char const* cstr() const {
-        switch (type()) {
-            case Type::TINY:
-                return tiny.chars;
-            case Type::LITERAL:
-                return lit.cstr;
-            case Type::SHARED:
-                return &sh.shared->cstr_;
-        }
-        std::unreachable();
-    }
-
-    constexpr static Data ofTiny(int64_t size, char const* cstr) {
-        Data ret = {.size_ = size, .tiny = {}};
-        ce_strncpy(ret.tiny.chars, cstr, size + 1);
-        return ret;
-    }
-
-    consteval static Data ofLiteral(int64_t size, char const* cstr) {
-        return {.size_ = size, .lit = {.cstr = cstr}};
-    }
-
-    constexpr static Data ofShared(int64_t size, char const* cstr) {
-        auto* shared = SharedData::create(size, cstr);
-        return {.size_ = 0 - shared->size_, .sh = {shared}};
-    }
-
-    constexpr Data copy() const {
-        if (type() == stringdetail::Type::SHARED) { sh.shared->take(); }
-        return *this;
-    }
-
-    constexpr Data move() {
-        Data ret = *this;
-        memset(this, 0, sizeof(Data));
-        return ret;
-    }
-};
-static_assert(sizeof(Data) == kDataSize);
-
-}  // namespace stringdetail
 
 struct String final {
     using Data = stringdetail::Data;
@@ -124,14 +24,19 @@ struct String final {
     constexpr size_t size() const { return data_.size(); }
     constexpr char const* data() const { return data_.cstr(); }
 
+    static constexpr char const* kEmptyCString = "";
+
+    static consteval Data fromCStringCE(size_t size, char const* cstr) {
+        return (size < stringdetail::kTinyLimit)
+                       ? Data::ofTiny(size, cstr)
+                       : Data::ofLiteral(size, cstr);
+    }
+
     static constexpr Data fromCString(size_t size, char const* cstr) {
-        if consteval {
-            return (size < stringdetail::kTinyLimit)
-                           ? Data::ofTiny(size, cstr)
-                           : Data::ofLiteral(size, cstr);
-        }
-        return (size < stringdetail::kTinyLimit) ? Data::ofTiny(size, cstr)
-                                                 : Data::ofShared(size, cstr);
+        if consteval { return fromCStringCE(size, cstr); }
+        return (size < (stringdetail::kTinyLimit - 1))
+                       ? Data::ofTiny(size, cstr)
+                       : Data::ofShared(size, cstr);
     }
 
     constexpr ~String() {
@@ -141,29 +46,31 @@ struct String final {
         }
     }
 
-    constexpr String()
-            : String(0, "") {}
+    constexpr String() : String(0, kEmptyCString) {}
 
-    constexpr String(char const* cstr)
-            : String(ce_strlen(cstr), cstr) {}
+    constexpr String(char const* cstr) : String(ce_strlen(cstr), cstr) {}
 
     constexpr String(size_t size, char const* cstr)
             : data_(fromCString(size, cstr)) {}
 
-    constexpr String(String const& rhs)
-            : data_(rhs.data_.copy()) {}
+    constexpr String(String const& rhs) : data_(rhs.data_.copy()) {}
+
+    constexpr String(std::string rhs) : String(rhs.data()) {}
 
     String& operator=(String const& rhs) {
         *(const_cast<Data*>(&data_)) = rhs.data_.copy();
         return *this;
     }
 
-    constexpr String(String&& rhs)
-            : data_(rhs.data_.move()) {}
+    constexpr String(String&& rhs) : data_(rhs.data_.move()) {}
 
     String& operator=(String&& rhs) {
         *(const_cast<Data*>(&data_)) = rhs.data_.move();
         return *this;
+    }
+
+    constexpr bool operator==(String const& rhs) const {
+        return (this == &rhs) || (this->data_ == rhs.data_);
     }
 
     constexpr String operator+(String const& rhs) const {
@@ -172,11 +79,41 @@ struct String final {
         ce_strncpy(tmp, data(), size());
         ce_strncpy(tmp + size(), rhs.data(), rhs.size());
         tmp[total] = 0;
-        return String(tmp);
+        return {tmp};
+    }
+
+    constexpr operator std::string() const {
+        std::string ret(data());
+        return ret;
+    }
+
+    constexpr operator uint64_t() const {
+        auto str = static_cast<std::string>(*this);
+        return std::stoul(str);
     }
 
     constexpr char const& operator[](size_t i) const { return *(data() + i); }
+
+    Generator<String> split(char sep) const {
+        // TODO share a backing string and yield `SubString`s or something
+        size_t const size = this->size();
+        char const* data = this->data();
+        size_t start = 0;  // current [initial] part starts here
+        size_t pos = 0;    // current end position (exclusive)
+        while (pos < size) {
+            if (data[pos] == sep) {
+                co_yield String(pos - start, data + start);
+                start = pos + 1;  // skip past this char
+            }
+            ++pos;
+        }
+        co_yield String(pos - start, data + start);
+    }
 };
 static_assert(sizeof(String) == stringdetail::kDataSize);
+
+constexpr std::ostream& operator<<(std::ostream& os, cxx::String const& str) {
+    return os << static_cast<std::string>(str);
+}
 
 }  // namespace cxx

@@ -1,0 +1,9 @@
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+  ClangTidy:
+    Add: modernize*
+    Remove:
+      - modernize-use-trailing-return-type
+      - modernize-use-nodiscard
+      - modernize-avoid-c-arrays

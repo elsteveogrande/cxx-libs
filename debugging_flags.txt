@@ -1,3 +1,4 @@
 -UNDEBUG
--Og
+-O1
 -g
+-fno-inline
