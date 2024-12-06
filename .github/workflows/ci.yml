@@ -14,11 +14,5 @@ jobs:
       uses: actions/checkout@v4
     - name: info
       run: clang++ --version
-    - name: testA
-      run: make testA
-    - name: testM
-      run: make testM
-    - name: testT
-      run: make testT
-    - name: testU
-      run: make testU
+    - name: tests
+      run: make
