@@ -86,25 +86,31 @@ class Makefile:
                 deps=[test_cc] + [all_headers.name] + [builddir_target.name],
                 build=f"clang++ @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}")
 
+        def run_cmd(test_prog: str, suf: str) -> str:
+            cmd = test_prog
+            if suf == "asan":
+                cmd = f"ASAN_OPTIONS=detect_leaks=1 {cmd}"
+            return cmd
+
         for header in headers:
             base_name = header.rstrip(".h")
             test_cc = f"test/{base_name}Tests.cc"
 
             # asan, ubsan, etc. tests for this one test
             group: list[Target] = []
+            test_cmds: list[str] = []
 
-            # TODO add tsan=thread, msan=memory (which skips on OSX)
             for (suf, san) in (("asan", "address"), ("ubsan", "undefined"), ("tsan", "thread")):
                 test_prog = f"build/{base_name}Tests.{suf}"
                 group.append(self.add(make_test_target(test_prog, test_cc, suf, san)))
+                test_cmds.append(run_cmd(test_prog, suf))
 
             # add one target for all flavors of this test
-            test_progs = [p.name for p in group]
             test_target = self.add(
                 Target(
                     name=f"{base_name}Tests",
                     deps=[t.name for t in group],
-                    build=(" && ".join(test_progs))))
+                    build=(" && ".join(test_cmds))))
 
             # add under "all" target
             self.target("all").deps.append(test_target.name)
