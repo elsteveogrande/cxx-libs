@@ -89,7 +89,10 @@ class Makefile:
         def run_cmd(test_prog: str, suf: str) -> str:
             cmd = test_prog
             if suf == "asan":
-                cmd = f"ASAN_OPTIONS=detect_leaks=1 {cmd}"
+                # OSX's `libobjc` leaks something at program start.
+                # We'll use the separate `lsan` test group for leaks.
+                # https://github.com/llvm/llvm-project/issues/115992
+                cmd = f"ASAN_OPTIONS=detect_leaks=0 {cmd}"
             return cmd
 
         for header in headers:

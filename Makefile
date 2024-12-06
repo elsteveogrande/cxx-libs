@@ -2,7 +2,7 @@
 all: UtilTests StackTraceTests ExceptionTests RefTests GeneratorTests StringTests JSONTests
 
 UtilTests: build/UtilTests.asan build/UtilTests.ubsan build/UtilTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/UtilTests.asan && build/UtilTests.ubsan && build/UtilTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/UtilTests.asan && build/UtilTests.ubsan && build/UtilTests.tsan
 
 build/UtilTests.asan: test/UtilTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/UtilTests.asan test/UtilTests.cc
@@ -19,7 +19,7 @@ build/UtilTests.tsan: test/UtilTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/UtilTests.tsan test/UtilTests.cc
 
 StackTraceTests: build/StackTraceTests.asan build/StackTraceTests.ubsan build/StackTraceTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/StackTraceTests.asan && build/StackTraceTests.ubsan && build/StackTraceTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/StackTraceTests.asan && build/StackTraceTests.ubsan && build/StackTraceTests.tsan
 
 build/StackTraceTests.asan: test/StackTraceTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StackTraceTests.asan test/StackTraceTests.cc
@@ -31,7 +31,7 @@ build/StackTraceTests.tsan: test/StackTraceTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StackTraceTests.tsan test/StackTraceTests.cc
 
 ExceptionTests: build/ExceptionTests.asan build/ExceptionTests.ubsan build/ExceptionTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/ExceptionTests.asan && build/ExceptionTests.ubsan && build/ExceptionTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/ExceptionTests.asan && build/ExceptionTests.ubsan && build/ExceptionTests.tsan
 
 build/ExceptionTests.asan: test/ExceptionTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/ExceptionTests.asan test/ExceptionTests.cc
@@ -43,7 +43,7 @@ build/ExceptionTests.tsan: test/ExceptionTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/ExceptionTests.tsan test/ExceptionTests.cc
 
 RefTests: build/RefTests.asan build/RefTests.ubsan build/RefTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/RefTests.asan && build/RefTests.ubsan && build/RefTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/RefTests.asan && build/RefTests.ubsan && build/RefTests.tsan
 
 build/RefTests.asan: test/RefTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/RefTests.asan test/RefTests.cc
@@ -55,7 +55,7 @@ build/RefTests.tsan: test/RefTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/RefTests.tsan test/RefTests.cc
 
 GeneratorTests: build/GeneratorTests.asan build/GeneratorTests.ubsan build/GeneratorTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/GeneratorTests.asan && build/GeneratorTests.ubsan && build/GeneratorTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/GeneratorTests.asan && build/GeneratorTests.ubsan && build/GeneratorTests.tsan
 
 build/GeneratorTests.asan: test/GeneratorTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/GeneratorTests.asan test/GeneratorTests.cc
@@ -67,7 +67,7 @@ build/GeneratorTests.tsan: test/GeneratorTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/GeneratorTests.tsan test/GeneratorTests.cc
 
 StringTests: build/StringTests.asan build/StringTests.ubsan build/StringTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/StringTests.asan && build/StringTests.ubsan && build/StringTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/StringTests.asan && build/StringTests.ubsan && build/StringTests.tsan
 
 build/StringTests.asan: test/StringTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StringTests.asan test/StringTests.cc
@@ -79,7 +79,7 @@ build/StringTests.tsan: test/StringTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StringTests.tsan test/StringTests.cc
 
 JSONTests: build/JSONTests.asan build/JSONTests.ubsan build/JSONTests.tsan
-	ASAN_OPTIONS=detect_leaks=1 build/JSONTests.asan && build/JSONTests.ubsan && build/JSONTests.tsan
+	ASAN_OPTIONS=detect_leaks=0 build/JSONTests.asan && build/JSONTests.ubsan && build/JSONTests.tsan
 
 build/JSONTests.asan: test/JSONTests.cc all_headers builddir
 	clang++ @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/JSONTests.asan test/JSONTests.cc

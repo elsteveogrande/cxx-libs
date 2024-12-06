@@ -81,7 +81,8 @@ class JSONArray final : public JSONBase {
 public:
     void write(std::ostream& os) const override;
 
-    static JSON toJSON(auto val);
+    template <typename X> requires requires(X x) { JSON(x); }
+    static JSON toJSON(X val);
 
     template <typename I, typename J, typename T = typename I::value_type>
     JSONArray(I it, J end);
@@ -153,12 +154,14 @@ struct JSONProp final {
             : name(cxx::String(name)), val(std::move(val)) {}
 };
 
-JSON JSONArray::toJSON(auto x) { return {x}; }
+template <typename X> requires requires(X x) { JSON(x); }
+JSON JSONArray::toJSON(X x) {
+    return {x};
+}
 
 template <typename I, typename J, typename T>
 JSONArray::JSONArray(I it, J end)
-        : genItems(Generator<T>::of(it, end, T()).map((std::function<JSON(T)>) toJSON)) {
-}
+        : genItems(Generator<T>::of(it, end).map(toJSON<T>)) {}
 
 inline void JSONArray::write(std::ostream& os) const {
     os << '[';

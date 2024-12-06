@@ -101,8 +101,11 @@ template <typename T> struct Generator final {
     std::default_sentinel_t end() const { return {}; }
     std::default_sentinel_t cend() const { return {}; }
 
-    template <typename F, typename U = typename F::result_type>
-    Generator<U> map(F func, U const& = U()) {
+    template <typename U> Generator<U> map(U (*func)(T)) {
+        return map(std::function<U(T)>(func));
+    }
+
+    template <typename U> Generator<U> map(std::function<U(T)> func) {
         return map(begin(), end(), func);
     }
 
