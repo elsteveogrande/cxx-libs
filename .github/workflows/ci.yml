@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: llvm19
-      run: apt-get install -y lsb-release wget software-properties-common gnupg && wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && chmod +x /tmp/llvm.sh && /tmp/llvm.sh 19
+      run: sudo apt-get install -y lsb-release wget software-properties-common gnupg && wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && chmod +x /tmp/llvm.sh && sudo /tmp/llvm.sh 19
     - name: checkout
       uses: actions/checkout@v4
     - name: info
