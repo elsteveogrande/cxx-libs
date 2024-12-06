@@ -14,7 +14,5 @@ jobs:
       run: sudo apt-get install -y lsb-release wget software-properties-common gnupg && wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && chmod +x /tmp/llvm.sh && sudo /tmp/llvm.sh 19
     - name: checkout
       uses: actions/checkout@v4
-    - name: info
-      run: clang++ --version
     - name: tests
-      run: make
+      run: CLANG=/usr/bin/clang++-19 make
