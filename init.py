@@ -84,7 +84,7 @@ class Makefile:
             return Target(
                 name=test_prog,
                 deps=[test_cc] + [all_headers.name] + [builddir_target.name],
-                build=f"clang++ @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}")
+                build=f"$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}")
 
         def run_cmd(test_prog: str, suf: str) -> str:
             cmd = test_prog
