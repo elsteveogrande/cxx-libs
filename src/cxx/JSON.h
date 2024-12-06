@@ -81,7 +81,7 @@ class JSONArray final : public JSONBase {
 public:
     void write(std::ostream& os) const override;
 
-    static JSON toJSON(int val);
+    static JSON toJSON(auto val);
 
     template <typename I, typename J, typename T = typename I::value_type>
     JSONArray(I it, J end);
@@ -153,7 +153,7 @@ struct JSONProp final {
             : name(cxx::String(name)), val(std::move(val)) {}
 };
 
-JSON JSONArray::toJSON(int x) { return {x}; }
+JSON JSONArray::toJSON(auto x) { return {x}; }
 
 template <typename I, typename J, typename T>
 JSONArray::JSONArray(I it, J end)
