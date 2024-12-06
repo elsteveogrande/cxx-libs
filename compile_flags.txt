@@ -1,5 +1,6 @@
 -xc++
 -std=gnu++23
+-stdlib=libc++
 -g1
 -Og
 -Wall
