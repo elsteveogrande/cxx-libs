@@ -25,7 +25,7 @@ inline constexpr int64_t ce_strlen(char const* data) {
 }
 
 template <typename D>
-inline consteval void cev_strncpy(D* dest, D const* src, size_t size) {
+inline consteval void cev_memcpy(D* dest, D const* src, size_t size) {
     size_t i = 0uz;
     for (; i < size; i++) {
         dest[i] = (D&) src[i];
@@ -34,8 +34,8 @@ inline consteval void cev_strncpy(D* dest, D const* src, size_t size) {
 }
 
 template <typename D>
-inline constexpr void ce_strncpy(D* dest, D const* src, size_t size) {
-    if consteval { return cev_strncpy(dest, src, size); }
+inline constexpr void ce_memcpy(D* dest, D const* src, size_t size) {
+    if consteval { return cev_memcpy(dest, src, size); }
     size_t i = 0uz;
     for (; i < size; i++) {
         dest[i] = (D&) src[i];
