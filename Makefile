@@ -3,164 +3,140 @@ CLANG ?= clang++
 
 all: UtilTests StackTraceTests ExceptionTests RefTests GeneratorTests StringTests JSONTests
 
-UtilTests: build/UtilTest build/UtilTest.asan build/UtilTest.ubsan build/UtilTest.tsan
-	build/UtilTest && ASAN_OPTIONS=detect_leaks=0 build/UtilTest.asan && build/UtilTest.ubsan && build/UtilTest.tsan
+UtilTests: build/UtilTests.asan build/UtilTests.ubsan build/UtilTests.tsan build/UtilTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/UtilTests.asan && build/UtilTests.ubsan && build/UtilTests.tsan && build/UtilTests
 
-build/UtilTest: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/UtilTest test/UtilTests.cc
+build/UtilTests.asan: test/UtilTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/UtilTests.asan test/UtilTests.cc
 
 all_headers: src/cxx/StackTrace.h src/cxx/JSON.h src/cxx/Util.h src/cxx/Exception.h src/cxx/Ref.h src/cxx/Generator.h src/cxx/String.h
 
 builddir:
 	mkdir -p build
 
-build/UtilTest.asan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/UtilTest.asan test/UtilTests.cc
+build/UtilTests.ubsan: test/UtilTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/UtilTests.ubsan test/UtilTests.cc
 
-build/UtilTest.ubsan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/UtilTest.ubsan test/UtilTests.cc
+build/UtilTests.tsan: test/UtilTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/UtilTests.tsan test/UtilTests.cc
 
-build/UtilTest.tsan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/UtilTest.tsan test/UtilTests.cc
+build/UtilTests: test/UtilTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/UtilTests test/UtilTests.cc
 
-StackTraceTests: build/StackTraceTest build/StackTraceTest.asan build/StackTraceTest.ubsan build/StackTraceTest.tsan
-	build/StackTraceTest && ASAN_OPTIONS=detect_leaks=0 build/StackTraceTest.asan && build/StackTraceTest.ubsan && build/StackTraceTest.tsan
+StackTraceTests: build/StackTraceTests.asan build/StackTraceTests.ubsan build/StackTraceTests.tsan build/StackTraceTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/StackTraceTests.asan && build/StackTraceTests.ubsan && build/StackTraceTests.tsan && build/StackTraceTests
 
-build/StackTraceTest: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/StackTraceTest test/StackTraceTests.cc
+build/StackTraceTests.asan: test/StackTraceTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StackTraceTests.asan test/StackTraceTests.cc
 
-build/StackTraceTest.asan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StackTraceTest.asan test/StackTraceTests.cc
+build/StackTraceTests.ubsan: test/StackTraceTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/StackTraceTests.ubsan test/StackTraceTests.cc
 
-build/StackTraceTest.ubsan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/StackTraceTest.ubsan test/StackTraceTests.cc
+build/StackTraceTests.tsan: test/StackTraceTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StackTraceTests.tsan test/StackTraceTests.cc
 
-build/StackTraceTest.tsan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StackTraceTest.tsan test/StackTraceTests.cc
+build/StackTraceTests: test/StackTraceTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/StackTraceTests test/StackTraceTests.cc
 
-ExceptionTests: build/ExceptionTest build/ExceptionTest.asan build/ExceptionTest.ubsan build/ExceptionTest.tsan
-	build/ExceptionTest && ASAN_OPTIONS=detect_leaks=0 build/ExceptionTest.asan && build/ExceptionTest.ubsan && build/ExceptionTest.tsan
+ExceptionTests: build/ExceptionTests.asan build/ExceptionTests.ubsan build/ExceptionTests.tsan build/ExceptionTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/ExceptionTests.asan && build/ExceptionTests.ubsan && build/ExceptionTests.tsan && build/ExceptionTests
 
-build/ExceptionTest: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/ExceptionTest test/ExceptionTests.cc
+build/ExceptionTests.asan: test/ExceptionTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/ExceptionTests.asan test/ExceptionTests.cc
 
-build/ExceptionTest.asan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/ExceptionTest.asan test/ExceptionTests.cc
+build/ExceptionTests.ubsan: test/ExceptionTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/ExceptionTests.ubsan test/ExceptionTests.cc
 
-build/ExceptionTest.ubsan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/ExceptionTest.ubsan test/ExceptionTests.cc
+build/ExceptionTests.tsan: test/ExceptionTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/ExceptionTests.tsan test/ExceptionTests.cc
 
-build/ExceptionTest.tsan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/ExceptionTest.tsan test/ExceptionTests.cc
+build/ExceptionTests: test/ExceptionTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/ExceptionTests test/ExceptionTests.cc
 
-RefTests: build/RefTest build/RefTest.asan build/RefTest.ubsan build/RefTest.tsan
-	build/RefTest && ASAN_OPTIONS=detect_leaks=0 build/RefTest.asan && build/RefTest.ubsan && build/RefTest.tsan
+RefTests: build/RefTests.asan build/RefTests.ubsan build/RefTests.tsan build/RefTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/RefTests.asan && build/RefTests.ubsan && build/RefTests.tsan && build/RefTests
 
-build/RefTest: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/RefTest test/RefTests.cc
+build/RefTests.asan: test/RefTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/RefTests.asan test/RefTests.cc
 
-build/RefTest.asan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/RefTest.asan test/RefTests.cc
+build/RefTests.ubsan: test/RefTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/RefTests.ubsan test/RefTests.cc
 
-build/RefTest.ubsan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/RefTest.ubsan test/RefTests.cc
+build/RefTests.tsan: test/RefTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/RefTests.tsan test/RefTests.cc
 
-build/RefTest.tsan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/RefTest.tsan test/RefTests.cc
+build/RefTests: test/RefTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/RefTests test/RefTests.cc
 
-GeneratorTests: build/GeneratorTest build/GeneratorTest.asan build/GeneratorTest.ubsan build/GeneratorTest.tsan
-	build/GeneratorTest && ASAN_OPTIONS=detect_leaks=0 build/GeneratorTest.asan && build/GeneratorTest.ubsan && build/GeneratorTest.tsan
+GeneratorTests: build/GeneratorTests.asan build/GeneratorTests.ubsan build/GeneratorTests.tsan build/GeneratorTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/GeneratorTests.asan && build/GeneratorTests.ubsan && build/GeneratorTests.tsan && build/GeneratorTests
 
-build/GeneratorTest: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/GeneratorTest test/GeneratorTests.cc
+build/GeneratorTests.asan: test/GeneratorTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/GeneratorTests.asan test/GeneratorTests.cc
 
-build/GeneratorTest.asan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/GeneratorTest.asan test/GeneratorTests.cc
+build/GeneratorTests.ubsan: test/GeneratorTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/GeneratorTests.ubsan test/GeneratorTests.cc
 
-build/GeneratorTest.ubsan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/GeneratorTest.ubsan test/GeneratorTests.cc
+build/GeneratorTests.tsan: test/GeneratorTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/GeneratorTests.tsan test/GeneratorTests.cc
 
-build/GeneratorTest.tsan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/GeneratorTest.tsan test/GeneratorTests.cc
+build/GeneratorTests: test/GeneratorTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/GeneratorTests test/GeneratorTests.cc
 
-StringTests: build/StringTest build/StringTest.asan build/StringTest.ubsan build/StringTest.tsan
-	build/StringTest && ASAN_OPTIONS=detect_leaks=0 build/StringTest.asan && build/StringTest.ubsan && build/StringTest.tsan
+StringTests: build/StringTests.asan build/StringTests.ubsan build/StringTests.tsan build/StringTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/StringTests.asan && build/StringTests.ubsan && build/StringTests.tsan && build/StringTests
 
-build/StringTest: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/StringTest test/StringTests.cc
+build/StringTests.asan: test/StringTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StringTests.asan test/StringTests.cc
 
-build/StringTest.asan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StringTest.asan test/StringTests.cc
+build/StringTests.ubsan: test/StringTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/StringTests.ubsan test/StringTests.cc
 
-build/StringTest.ubsan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/StringTest.ubsan test/StringTests.cc
+build/StringTests.tsan: test/StringTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StringTests.tsan test/StringTests.cc
 
-build/StringTest.tsan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/StringTest.tsan test/StringTests.cc
+build/StringTests: test/StringTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/StringTests test/StringTests.cc
 
-JSONTests: build/JSONTest build/JSONTest.asan build/JSONTest.ubsan build/JSONTest.tsan
-	build/JSONTest && ASAN_OPTIONS=detect_leaks=0 build/JSONTest.asan && build/JSONTest.ubsan && build/JSONTest.tsan
+JSONTests: build/JSONTests.asan build/JSONTests.ubsan build/JSONTests.tsan build/JSONTests
+	LSAN_OPTIONS=suppressions=ignorelist.lsan.txt ASAN_OPTIONS=detect_leaks=1 build/JSONTests.asan && build/JSONTests.ubsan && build/JSONTests.tsan && build/JSONTests
 
-build/JSONTest: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt -o build/JSONTest test/JSONTests.cc
+build/JSONTests.asan: test/JSONTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/JSONTests.asan test/JSONTests.cc
 
-build/JSONTest.asan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/JSONTest.asan test/JSONTests.cc
+build/JSONTests.ubsan: test/JSONTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/JSONTests.ubsan test/JSONTests.cc
 
-build/JSONTest.ubsan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=undefined -o build/JSONTest.ubsan test/JSONTests.cc
+build/JSONTests.tsan: test/JSONTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/JSONTests.tsan test/JSONTests.cc
 
-build/JSONTest.tsan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=thread -o build/JSONTest.tsan test/JSONTests.cc
+build/JSONTests: test/JSONTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt -o build/JSONTests test/JSONTests.cc
 
 clean:
 	rm -rf build/
 
-msan: build/UtilTest.msan build/StackTraceTest.msan build/ExceptionTest.msan build/RefTest.msan build/GeneratorTest.msan build/StringTest.msan build/JSONTest.msan
-	true && build/UtilTest.msan && build/StackTraceTest.msan && build/ExceptionTest.msan && build/RefTest.msan && build/GeneratorTest.msan && build/StringTest.msan && build/JSONTest.msan
+msan: build/UtilTests.msan build/StackTraceTests.msan build/ExceptionTests.msan build/RefTests.msan build/GeneratorTests.msan build/StringTests.msan build/JSONTests.msan
+	true && build/UtilTests.msan && build/StackTraceTests.msan && build/ExceptionTests.msan && build/RefTests.msan && build/GeneratorTests.msan && build/StringTests.msan && build/JSONTests.msan
 
-build/UtilTest.msan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/UtilTest.msan test/UtilTests.cc
+build/UtilTests.msan: test/UtilTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/UtilTests.msan test/UtilTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/StackTraceTest.msan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StackTraceTest.msan test/StackTraceTests.cc
+build/StackTraceTests.msan: test/StackTraceTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StackTraceTests.msan test/StackTraceTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/ExceptionTest.msan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/ExceptionTest.msan test/ExceptionTests.cc
+build/ExceptionTests.msan: test/ExceptionTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/ExceptionTests.msan test/ExceptionTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/RefTest.msan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/RefTest.msan test/RefTests.cc
+build/RefTests.msan: test/RefTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/RefTests.msan test/RefTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/GeneratorTest.msan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/GeneratorTest.msan test/GeneratorTests.cc
+build/GeneratorTests.msan: test/GeneratorTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/GeneratorTests.msan test/GeneratorTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/StringTest.msan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StringTest.msan test/StringTests.cc
+build/StringTests.msan: test/StringTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StringTests.msan test/StringTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 
-build/JSONTest.msan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/JSONTest.msan test/JSONTests.cc
-
-lsan: build/UtilTest.lsan build/StackTraceTest.lsan build/ExceptionTest.lsan build/RefTest.lsan build/GeneratorTest.lsan build/StringTest.lsan build/JSONTest.lsan
-	true && ASAN_OPTIONS=detect_leaks=1 build/UtilTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/StackTraceTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/ExceptionTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/RefTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/GeneratorTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/StringTest.lsan && ASAN_OPTIONS=detect_leaks=1 build/JSONTest.lsan
-
-build/UtilTest.lsan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/UtilTest.lsan test/UtilTests.cc
-
-build/StackTraceTest.lsan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StackTraceTest.lsan test/StackTraceTests.cc
-
-build/ExceptionTest.lsan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/ExceptionTest.lsan test/ExceptionTests.cc
-
-build/RefTest.lsan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/RefTest.lsan test/RefTests.cc
-
-build/GeneratorTest.lsan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/GeneratorTest.lsan test/GeneratorTests.cc
-
-build/StringTest.lsan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/StringTest.lsan test/StringTests.cc
-
-build/JSONTest.lsan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=address -o build/JSONTest.lsan test/JSONTests.cc
+build/JSONTests.msan: test/JSONTests.cc all_headers builddir
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/JSONTests.msan test/JSONTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
 

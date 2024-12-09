@@ -1,0 +1,2 @@
+leak:_fetchInitializingClassList
+leak:std::__1::basic_ostream

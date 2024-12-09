@@ -27,18 +27,41 @@ public:
 
     ~Ref() noexcept(true) { clear(); }
 
-    Ref(T* obj) noexcept(true) : detail::RefBase(obj) {
+    Ref(T* obj) noexcept(true)
+            : detail::RefBase(obj) {
         assert(obj);
         // obj's `rc` is zero-initialized, which indicates
         // a reference count of 1; don't increment it.
     }
 
-    Ref(Ref<T> const& rhs) noexcept(true) : detail::RefBase(rhs.get()) {
+    Ref(Ref const& rhs) noexcept(true)
+            : detail::RefBase(rhs.get()) {
         inc();
     }
 
+    Ref& operator=(Ref const& rhs) noexcept(true) {
+        clear();
+        new (this) Ref(rhs);
+        return *this;
+    }
+
+    Ref(Ref&& rhs) noexcept(true)
+            : detail::RefBase(rhs.get()) {
+        // Steal this obj pointer, clear it in rhs.
+        // Avoids the needs to increment / decrement refcount.
+        rhs.obj_ = nullptr;
+    }
+
+    Ref& operator=(Ref&& rhs) noexcept(true) {
+        // Steal this obj pointer, clear it in rhs.
+        // Avoids the needs to increment / decrement refcount.
+        this->obj_ = rhs.obj_;
+        rhs.obj_ = nullptr;
+        return *this;
+    }
+
     template <typename U>
-    requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
+        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
     operator Ref<U>() {
         U* obj = (U*) this->rawPointer();
         inc();

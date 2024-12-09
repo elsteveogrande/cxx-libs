@@ -32,8 +32,9 @@ template <typename T> struct Promise {
 template <typename T> struct Coro final : RefCounted<Coro<T>> {
     using Handle = std::coroutine_handle<Promise<T>>;
     Handle handle;
-    ~Coro() {}
-    Coro(Promise<T>* promise) : handle(Handle::from_promise(*promise)) {}
+    ~Coro() { handle.destroy(); }
+    Coro(Promise<T>* promise)
+            : handle(Handle::from_promise(*promise)) {}
     bool done() { return handle.done(); }
 };
 
@@ -48,7 +49,7 @@ template <typename T> struct ConstCoroIterator : CoroIteratorBase<T> {
         this->coro->handle.resume();
         return *this;
     }
-    T const& operator*() { return this->coro->handle.promise().val; }
+    T operator*() { return this->coro->handle.promise().val; }
 };
 
 template <typename T> struct CoroIterator : ConstCoroIterator<T> {
@@ -57,7 +58,7 @@ template <typename T> struct CoroIterator : ConstCoroIterator<T> {
         this->coro->handle.resume();
         return *this;
     }
-    T& operator*() { return this->coro->handle.promise().val; }
+    T operator*() { return this->coro->handle.promise().val; }
 };
 
 template <typename T> struct Generator final {
@@ -73,7 +74,8 @@ template <typename T> struct Generator final {
     explicit Generator(promise_type* promise)
             : coro_(cxx::make<Coro<T>>(promise)) {}
 
-    Generator(Generator<T> const& rhs) : coro_(rhs.coro_) {}
+    Generator(Generator<T> const& rhs)
+            : coro_(rhs.coro_) {}
 
     template <typename I, typename J, typename U = typename I::value_type>
     static Generator<typename I::value_type> of(I it, J end, U const& = U()) {

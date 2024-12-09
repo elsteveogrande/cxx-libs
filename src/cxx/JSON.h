@@ -52,7 +52,8 @@ public:
     void write(std::ostream& os) const override {
         os << (val ? "true" : "false");
     }
-    JSONBool(bool val) : val(val) {}
+    JSONBool(bool val)
+            : val(val) {}
 };
 
 class JSONNumber final : public JSONBase {
@@ -60,14 +61,16 @@ class JSONNumber final : public JSONBase {
 
 public:
     void write(std::ostream& os) const override { os << val; }
-    JSONNumber(double val) : val(val) {}
+    JSONNumber(double val)
+            : val(val) {}
 };
 
 class JSONString final : public JSONBase {
     cxx::String val = "";  // to make this default-conclassible
 
 public:
-    JSONString(cxx::String val) : val(std::move(val)) {}
+    JSONString(cxx::String val)
+            : val(std::move(val)) {}
     operator cxx::String() const { return val; }
 
     void write(std::ostream& os) const override {
@@ -81,8 +84,8 @@ class JSONArray final : public JSONBase {
 public:
     void write(std::ostream& os) const override;
 
-    template <typename X> requires requires(X x) { JSON(x); }
-    static JSON toJSON(X val);
+    template <typename X>
+        requires requires(X x) { JSON(x); } static JSON toJSON(X val);
 
     template <typename I, typename J, typename T = typename I::value_type>
     JSONArray(I it, J end);
@@ -97,7 +100,8 @@ public:
     void write(std::ostream& os) const override;
 
     template <HasGenJSONProps T>
-    JSONObject(T const& obj) : genJSONProps(obj.genJSONProps()) {};
+    JSONObject(T const& obj)
+            : genJSONProps(obj.genJSONProps()) {};
 };
 
 class JSON final {
@@ -110,31 +114,39 @@ public:
 
     // template <typename J> JSON(Ref<J> json) : json_(json) {}
 
-    JSON() : json_(make<JSONNull>()) {}
+    JSON()
+            : json_(make<JSONNull>()) {}
 
-    JSON(std::nullptr_t) : json_(make<JSONNull>()) {}
-
-    template <typename T> requires std::same_as<T, bool>
-    JSON(T val) : json_(make<JSONBool>(val)) {}
+    JSON(std::nullptr_t)
+            : json_(make<JSONNull>()) {}
 
     template <typename T>
-    requires(!std::same_as<T, bool>) &&
-            (std::is_integral_v<T> || std::is_floating_point_v<T>)
-    JSON(T val) : json_(make<JSONNumber>(val)) {}
+        requires std::same_as<T, bool> JSON(T val)
+            : json_(make<JSONBool>(val)) {}
 
-    JSON(cxx::String const& val) : json_(make<JSONString>(val)) {}
+    template <typename T>
+        requires(!std::same_as<T, bool>) &&
+                (std::is_integral_v<T> || std::is_floating_point_v<T>)
+    JSON(T val)
+            : json_(make<JSONNumber>(val)) {}
 
-    template <typename T> requires requires(T const& val) { val.toString(); }
-    JSON(T const& val) : json_(make<JSONString>(val.toString())) {}
+    JSON(cxx::String const& val)
+            : json_(make<JSONString>(val)) {}
+
+    template <typename T>
+        requires requires(T const& val) { val.toString(); } JSON(T const& val)
+            : json_(make<JSONString>(val.toString())) {}
 
     // template <typename T> requires requires(T const& val) {
     //     val.genJSONProps();
     // } JSON(T const& val) : json_(make<JSONObject>(val)) {}
 
-    template <typename T> requires requires(T const& t) {
-        t.begin();
-        t.end();
-    } JSON(T val) : json_(make<JSONArray>(val.begin(), val.end())) {}
+    template <typename T>
+        requires requires(T const& t) {
+            t.begin();
+            t.end();
+        } JSON(T val)
+            : json_(make<JSONArray>(val.begin(), val.end())) {}
 };
 
 struct JSONProp final {
@@ -142,7 +154,8 @@ struct JSONProp final {
     JSON val;
 
     // Ensure this class is default-conclassible
-    JSONProp() : name(""), val(JSONString("")) {}
+    JSONProp()
+            : name(""), val(JSONString("")) {}
 
     JSONProp(JSONString name, JSON val)
             : name(std::move(name)), val(std::move(val)) {}
@@ -154,8 +167,8 @@ struct JSONProp final {
             : name(cxx::String(name)), val(std::move(val)) {}
 };
 
-template <typename X> requires requires(X x) { JSON(x); }
-JSON JSONArray::toJSON(X x) {
+template <typename X>
+    requires requires(X x) { JSON(x); } JSON JSONArray::toJSON(X x) {
     return {x};
 }
 
@@ -166,7 +179,7 @@ JSONArray::JSONArray(I it, J end)
 inline void JSONArray::write(std::ostream& os) const {
     os << '[';
     std::string sep = "";
-    for (JSON const& item : genItems) {
+    for (JSON item : genItems) {
         os << sep;
         sep = ",";
         item.write(os);
@@ -176,7 +189,7 @@ inline void JSONArray::write(std::ostream& os) const {
 
 inline void JSONObject::write(std::ostream& os) const {
     cxx::String sep = "{";
-    for (auto& prop : genJSONProps) {
+    for (auto prop : genJSONProps) {
         os << sep;
         sep = ",";
         prop.name.write(os);

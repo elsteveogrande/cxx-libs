@@ -88,21 +88,17 @@ class Makefile:
                 build=f"$(CLANG) @compile_flags.txt -o {test_prog} {test_cc}")
 
         def make_test_target_san(test_prog: str, test_cc: str, suf: str, san: str) -> Target:
-            return Target(
-                name=test_prog,
-                deps=[test_cc] + [all_headers.name] + [builddir_target.name],
-                build=f"$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}")
+            deps = [test_cc] + [all_headers.name] + [builddir_target.name]
+            build = f"$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}"
+            if suf == "msan":
+                build += " -fsanitize-ignorelist=ignorelist.msan.txt"
+            return Target(name=test_prog, deps=deps, build=build)
 
         def run_cmd(test_prog: str, suf: str) -> str:
             cmd = f"{test_prog}.{suf}"
             if suf == "asan":
-                # OSX's `libobjc` leaks something at program start.
-                # We'll use the separate `lsan` test group for leaks.
-                # https://github.com/llvm/llvm-project/issues/115992
-                cmd = f"ASAN_OPTIONS=detect_leaks=0 {cmd}"
-            elif suf == "lsan":
-                # Not a real sanitizer; it's ASAN + detect_leaks enabled
                 cmd = f"ASAN_OPTIONS=detect_leaks=1 {cmd}"
+                cmd = f"LSAN_OPTIONS=suppressions=ignorelist.lsan.txt {cmd}"
             return cmd
 
         for header in headers:
@@ -113,12 +109,14 @@ class Makefile:
             group: list[Target] = []
             test_cmds: list[str] = []
 
-            test_prog = f"build/{base_name}Test"
-            test_cmds.append(test_prog)
-            group.append(self.add(make_test_target_opt(test_prog, test_cc)))
+            test_prog = f"build/{base_name}Tests"
             for (suf, san) in (("asan", "address"), ("ubsan", "undefined"), ("tsan", "thread")):
                 group.append(self.add(make_test_target_san(test_prog + "." + suf, test_cc, suf, san)))
                 test_cmds.append(run_cmd(test_prog, suf))
+
+            # finally add the no-SAN, optimized test
+            group.append(self.add(make_test_target_opt(test_prog, test_cc)))
+            test_cmds.append(test_prog)
 
             # add one target for all flavors of this test
             test_target = self.add(
@@ -131,16 +129,14 @@ class Makefile:
             self.target("all").deps.append(test_target.name)
 
         # Add MSAN tests as a separate thing, since OSX doesn't support it.
-        # Also, while OSX support leak sanitizer, OSX itself leaks memory,
-        # so again, it's a separate target.
-        for (suf, san) in (("msan", "memory"), ("lsan", "address")):
+        for (suf, san) in (("msan", "memory"),):
             san_target = self.add(Target(name=suf, deps=[], build="true"))
             self.roots.append(san_target)
             for header in headers:
                 base_name = header.rstrip(".h")
                 test_cc = f"test/{base_name}Tests.cc"
-                prog_base = f"build/{base_name}Test"
-                san_prog = f"build/{base_name}Test.{suf}"
+                prog_base = f"build/{base_name}Tests"
+                san_prog = f"build/{base_name}Tests.{suf}"
                 san_test = self.add(make_test_target_san(san_prog, test_cc, suf, san))
                 self.targets[suf].deps.append(san_test.name)
                 self.targets[suf].build += " && " + run_cmd(prog_base, suf)

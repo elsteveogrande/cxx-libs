@@ -65,6 +65,7 @@ struct HeapString {
         char* data = new char[bytes];
         auto* ret = new (data) HeapString();
         ce_memcpy(data + 8, src, size);
+        *(data + 8 + size) = 0;
         return ret;
     }
 };
@@ -76,7 +77,7 @@ struct String final : StringBase {
     // TODO!  Union all these instead of wasting storage
     HeapString* storage_ {nullptr};
     char const* literal_ {nullptr};
-    char tiny_[8] {0};
+    char small_[8] {0};
 
     constexpr Type _type() const override { return type_; }
 
@@ -85,27 +86,31 @@ struct String final : StringBase {
     constexpr char const* data() const override {
         if consteval {
             switch (type_) {
-            case StringBase::Type::SMALL:   return tiny_;
+            case StringBase::Type::SMALL:   return small_;
             case StringBase::Type::LITERAL: return literal_;
             case StringBase::Type::SHARED:  std::unreachable();
             }
         }
         switch (type_) {
-        case StringBase::Type::SMALL:   return tiny_;
+        case StringBase::Type::SMALL:   return small_;
         case StringBase::Type::LITERAL: return literal_;
         case StringBase::Type::SHARED:  return &storage_->data_;
         }
     }
 
-    constexpr ~String() {
-        if consteval { return; }
+    constexpr void _clear() {
+        type_ = Type::SMALL;
+        size_ = 0;
+        small_[0] = 0;
         if (storage_) {
             if (-1 == --storage_->rc_) { delete[] storage_; }
             storage_ = nullptr;
         }
-        size_ = 0;
-        tiny_[0] = 0;
-        type_ = Type::SMALL;
+    }
+
+    constexpr ~String() {
+        if consteval { return; }
+        _clear();
     }
 
     constexpr String()
@@ -123,8 +128,8 @@ struct String final : StringBase {
             size_ = rhs.size_;
             literal_ = rhs.literal_;
             storage_ = nullptr;
-            cev_memcpy(tiny_, rhs.tiny_, 7);
-            tiny_[7] = 0;
+            cev_memcpy(small_, rhs.small_, 7);
+            small_[7] = 0;
             return;
         }
         type_ = rhs.type_;
@@ -136,25 +141,28 @@ struct String final : StringBase {
         } else {
             storage_ = nullptr;
         }
-        ce_memcpy(tiny_, rhs.tiny_, 7);
-        tiny_[7] = 0;
+        ce_memcpy(small_, rhs.small_, 7);
+        small_[7] = 0;
     }
 
     constexpr String& operator=(String const& rhs) {
+        _clear();
         new (this) String(rhs);
         return *this;
     }
 
     constexpr String(String&& _rhs) {
+        // TODO this can be optimized to avoid atomic inc / dec of refcount
         String const& rhs = _rhs;
-        new (this) String(rhs);
-        rhs.~String();
+        this->operator=(rhs);
+        _rhs._clear();
     }
 
     constexpr String& operator=(String&& _rhs) {
+        // TODO this can be optimized to avoid atomic inc / dec of refcount
         String const& rhs = _rhs;
-        new (this) String(rhs);
-        rhs.~String();
+        this->operator=(rhs);
+        _rhs._clear();
         return *this;
     }
 
@@ -163,7 +171,7 @@ struct String final : StringBase {
         if consteval {
             if (size < 8) {
                 type_ = Type::SMALL;
-                cev_memcpy(tiny_, src, size);
+                cev_memcpy(small_, src, size);
             } else {
                 type_ = Type::LITERAL;
                 literal_ = src;

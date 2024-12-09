@@ -30,7 +30,6 @@ inline consteval void cev_memcpy(D* dest, D const* src, size_t size) {
     for (; i < size; i++) {
         dest[i] = (D&) src[i];
     }
-    dest[i] = 0;
 }
 
 template <typename D>
@@ -40,7 +39,6 @@ inline constexpr void ce_memcpy(D* dest, D const* src, size_t size) {
     for (; i < size; i++) {
         dest[i] = (D&) src[i];
     }
-    dest[i] = 0;
 }
 
 template <typename D>
