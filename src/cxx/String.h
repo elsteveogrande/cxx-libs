@@ -1,7 +1,4 @@
 #pragma once
-#include <_abort.h>
-#include <cxx/Ref.h>
-#include <string>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -13,6 +10,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <utility>
 
 namespace cxx {
