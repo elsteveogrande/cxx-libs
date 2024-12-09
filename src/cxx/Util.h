@@ -60,4 +60,21 @@ inline constexpr void ce_memset(D* dest, D byte, size_t size) {
     }
 }
 
+template <typename D>
+inline consteval void cev_strncat(size_t pos, D* dest, D const* src) {
+    size_t srcPos = 0;
+    while (*src[srcPos]) {
+        dest[pos++] = src[srcPos++];
+    }
+}
+
+template <typename D>
+inline constexpr void ce_strncat(size_t pos, D* dest, D const* src) {
+    if consteval { return cev_strncat(pos, dest, src); }
+    size_t srcPos = 0;
+    while (*src[srcPos]) {
+        dest[pos++] = src[srcPos++];
+    }
+}
+
 }  // namespace cxx

@@ -9,9 +9,9 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <utility>
 
 using cxx::String;
-using cxx::stringdetail::Type;
 
 namespace {
 
@@ -35,33 +35,27 @@ struct R {
 
 void dump(char const* where, String const& s) {
     std::cerr << "@@@ " << L {40} << where << ": " << &s << ":";
-    std::cerr << " type:" << int(s.data_.type());
-    switch (s.data_.type()) {
-    case Type::TINY:
-        std::cerr
-                << " (TINY)    "
-                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                << R {3} << s.size() << ")"
-                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
-                << " \"" << s.data_.cstr() << '"';
+    std::cerr << " type:" << int(s.type());
+    switch (s.type()) {
+    case String::Type::SMALL:
+        std::cerr << " (SMALL)   "
+                  << " size_:" << R {3} << std::dec << R {3} << s.size()
+                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
+                  << " \"" << s.data() << '"';
         break;
 
-    case Type::LITERAL:
-        std::cerr
-                << " (LITERAL) "
-                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                << R {3} << s.size() << ")"
-                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
-                << " \"" << s.data_.cstr() << '"';
+    case String::Type::LITERAL:
+        std::cerr << " (LITERAL) "
+                  << " size_:" << R {3} << std::dec << R {3} << s.size()
+                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
+                  << " \"" << s.data() << '"';
         break;
 
-    case Type::SHARED:
-        std::cerr
-                << " (SHARED)  "
-                << " size_:" << R {3} << std::dec << s.data_.size_ << " ("
-                << R {3} << s.size() << ")"
-                << " ptr:" << R {12} << std::hex << std::intptr_t(s.data_.cstr())
-                << " \"" << s.data_.cstr() << '"';
+    case String::Type::SHARED:
+        std::cerr << " (SHARED)  "
+                  << " size_:" << R {3} << std::dec << R {3} << s.size()
+                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
+                  << " \"" << s.data() << '"';
         break;
 
     default: std::unreachable();

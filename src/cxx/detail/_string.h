@@ -4,117 +4,83 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // MIT Licensed
 
 #include "../Util.h"
-#include "_ref.h"
+#include "cxx/Ref.h"
 
-#include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <utility>
 
-namespace cxx::stringdetail {
-
-enum class Type : int { TINY = 0, LITERAL = 1, SHARED = 2 };
-
-struct SharedData final {
-    int64_t size_ {0};
-    detail::RefCount rc_;
-    char cstr_;  // first char; this struct is over-allocated
-
-    ~SharedData() = delete;
-    SharedData(SharedData const&) = delete;
-
-    static SharedData* create(size_t size, char const* src) {
-        auto full = sizeof(SharedData) + size;
-        auto* ret = (SharedData*) malloc(full);
-        ret->size_ = size;
-        // ret->rc_ = 1;  // already initially at 1
-        ce_strncpy(&ret->cstr_, src, size);
-        return ret;
-    }
-
-    void destroy() const {
-        assert(!rc_);
-        free((void*) this);
-    }
-
-    void take() const { rc_.inc(); }
-
-    void drop() const {
-        if (rc_.dec()) { destroy(); }
-    }
-};
+namespace cxx {
 
 static constexpr int kDataSize = 16;
-static constexpr int kTinyLimit = kDataSize - sizeof(int64_t);
 
-struct Tiny {
-    std::array<char, kTinyLimit> chars;
+enum class Type : int { SMALL = 0, LITERAL = 1, SHARED = 2 };
+
+struct [[gnu::packed]] Descriptor final {
+    Type const type_ : 8;
+    unsigned long const size_ : 56;
+
+    constexpr static size_t ensureSize(size_t size) {
+        assert(size < (1uz << 56));
+        return size;
+    }
+
+    constexpr Descriptor() : type_(Type::SMALL), size_(0) {}
+
+    constexpr Descriptor(Type type, size_t size)
+            : type_(type), size_(ensureSize(size)) {}
+
+    constexpr Descriptor(Descriptor const& rhs) = default;
 };
+static_assert(sizeof(Descriptor) == sizeof(size_t));
+
+struct Small {
+    static constexpr int kSmallLimit = kDataSize - sizeof(int64_t);
+    static constexpr char const* kEmpty = "";
+
+    char data_[kSmallLimit] {0};
+
+    constexpr Small() = default;
+    constexpr Small(char const* data, size_t size) {
+        ce_memcpy(data_, data, size + 1);
+    }
+
+    constexpr Small(Small const& rhs) = default;
+    constexpr Small& operator=(Small const& rhs) = default;
+
+    char const* data() const { return data_; }
+};
+static_assert(sizeof(Small) <= kDataSize);
+
 struct Literal {
-    char const* cstr;
+    char const* data_;
+    constexpr Literal(char const* data) : data_(data) {};
+    char const* data() const { return data_; }
 };
+static_assert(sizeof(Literal) <= kDataSize);
+
+struct SharedBuffer final : public RefCounted<SharedBuffer> {
+    int64_t size_ {0};
+    char data_;  // first char; this struct is over-allocated
+
+    SharedBuffer(SharedBuffer const&) = delete;
+
+    static Ref<SharedBuffer> create(size_t size, char const* data) {
+        auto full = sizeof(SharedBuffer) + size;
+        auto ret = Ref((SharedBuffer*) malloc(full));
+        ret->size_ = size;
+        ce_memcpy(&ret->data_, data, size);
+        return ret;
+    }
+
+    char const* data() const { return &data_; }
+};
+
 struct Shared {
-    SharedData* shared;
+    Ref<SharedBuffer> contents;
 };
+static_assert(sizeof(Shared) <= kDataSize);
 
-struct Data {
-    int64_t size_;
-    union {
-        Tiny tiny;
-        Literal lit;
-        Shared sh;
-    };
-
-    constexpr Type type() const {
-        if (size_ < 0) { return Type::SHARED; }
-        if (size_ < 8) { return Type::TINY; }
-        return Type::LITERAL;
-    }
-
-    constexpr size_t size() const { return abs(size_); }
-
-    constexpr char const* cstr() const {
-        switch (type()) {
-        case Type::TINY:    return tiny.chars.data();
-        case Type::LITERAL: return lit.cstr;
-        case Type::SHARED:  return &sh.shared->cstr_;
-        }
-        std::unreachable();
-    }
-
-    constexpr static Data ofTiny(int64_t size, char const* cstr) {
-        Data ret = {.size_ = size, .tiny = {}};
-        ce_strncpy(ret.tiny.chars.data(), cstr, size + 1);
-        return ret;
-    }
-
-    consteval static Data ofLiteral(int64_t size, char const* cstr) {
-        return {.size_ = size, .lit = {.cstr = cstr}};
-    }
-
-    constexpr static Data ofShared(int64_t size, char const* cstr) {
-        auto* shared = SharedData::create(size, cstr);
-        return {.size_ = 0 - shared->size_, .sh = {shared}};
-    }
-
-    constexpr Data copy() const {
-        if (type() == stringdetail::Type::SHARED) { sh.shared->take(); }
-        return *this;
-    }
-
-    constexpr Data move() {
-        Data ret = *this;
-        memset(this, 0, sizeof(Data));
-        return ret;
-    }
-
-    constexpr bool operator==(Data const& rhs) const {
-        return (this == &rhs) ||
-               (size() == rhs.size() && !memcmp(cstr(), rhs.cstr(), size()));
-    }
-};
-static_assert(sizeof(Data) == kDataSize);
-
-}  // namespace cxx::stringdetail
+}  // namespace cxx

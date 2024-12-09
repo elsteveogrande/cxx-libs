@@ -17,13 +17,15 @@ template <class T> class Ref final : private detail::RefBase {
 public:
     struct NullRef final : Exception {};
 
-    ~Ref() noexcept(true) {
+    void clear() noexcept(true) {
         if (obj_ && dec()) {
             auto* obj = obj_;
             obj_ = nullptr;
             delete obj;
         }
     }
+
+    ~Ref() noexcept(true) { clear(); }
 
     Ref(T* obj) noexcept(true) : detail::RefBase(obj) {
         assert(obj);
@@ -65,7 +67,11 @@ protected:
     virtual ~RefCounted() = default;
 
 public:
-    Ref<T> ref() noexcept(true) { return Ref((T*) (this)); }
+    Ref<T> ref() noexcept(true) {
+        auto ret = Ref((T*) (this));
+        inc();
+        return ret;
+    }
 };
 
 template <typename U, typename... A> static Ref<U> make(A&&... args) {
