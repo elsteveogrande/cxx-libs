@@ -1,6 +1,7 @@
 #pragma once
 #include <_abort.h>
 #include <cxx/Ref.h>
+#include <string>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -46,7 +47,7 @@ struct StringBase {
         int ret = 0;
         do {
             ret = (*b - *a);
-        } while (ret == 0 && *a && *b);
+        } while (ret == 0 && *a++ && *b++);
         return ret;
     }
 };
@@ -73,6 +74,8 @@ struct HeapString {
 struct String final : StringBase {
     Type type_;
     size_t size_ {0};
+
+    // TODO!  Union all these instead of wasting storage
     HeapString* storage_ {nullptr};
     char const* literal_ {nullptr};
     char tiny_[8] {0};
@@ -100,8 +103,11 @@ struct String final : StringBase {
         if consteval { return; }
         if (storage_) {
             if (-1 == --storage_->rc_) { delete storage_; }
+            storage_ = nullptr;
         }
-        memset((char*) this, 0, sizeof(String));
+        size_ = 0;
+        tiny_[0] = 0;
+        type_ = Type::SMALL;
     }
 
     constexpr String()
@@ -109,6 +115,9 @@ struct String final : StringBase {
 
     constexpr String(char const* src)
             : String(src, ce_strlen(src)) {}
+
+    constexpr String(std::string const& s)
+            : String(s.data(), s.size()) {}
 
     constexpr String(String const& rhs) {
         if consteval {
@@ -176,7 +185,21 @@ struct String final : StringBase {
         return {chars, total};
     }
 
-    Generator<String> split(char) const { abort(); }
+    Generator<String> split(char sep) const {
+        // TODO share a backing string and yield `SubString`s or something
+        size_t const size = this->size();
+        char const* data = this->data();
+        size_t start = 0;  // current [initial] part starts here
+        size_t pos = 0;    // current end position (exclusive)
+        while (pos < size) {
+            if (data[pos] == sep) {
+                co_yield String(data + start, pos - start);
+                start = pos + 1;  // skip past this char
+            }
+            ++pos;
+        }
+        co_yield String(data + start, pos - start);
+    }
 };
 
 }  // namespace cxx
