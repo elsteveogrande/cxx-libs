@@ -39,9 +39,8 @@ AlignConsecutiveShortCaseStatements:
   AlignCaseColons: false
 
 SpaceAfterCStyleCast: true
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
-PackConstructorInitializers: NextLine
-RequiresClausePosition: SingleLine
+PackConstructorInitializers: NextLineOnly
+RequiresClausePosition: WithFollowing
 
 PenaltyBreakBeforeFirstCallParameter: 200
 PenaltyBreakComment:                  100

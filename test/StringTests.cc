@@ -35,8 +35,8 @@ struct R {
 
 void dump(char const* where, String const& s) {
     std::cerr << "@@@ " << L {40} << where << ": " << &s << ":";
-    std::cerr << " type:" << int(s.type());
-    switch (s.type()) {
+    std::cerr << " type:" << int(s._type());
+    switch (s._type()) {
     case String::Type::SMALL:
         std::cerr << " (SMALL)   "
                   << " size_:" << R {3} << std::dec << R {3} << s.size()
