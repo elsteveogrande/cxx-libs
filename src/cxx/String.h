@@ -100,7 +100,7 @@ struct String final : StringBase {
     constexpr ~String() {
         if consteval { return; }
         if (storage_) {
-            if (-1 == --storage_->rc_) { delete storage_; }
+            if (-1 == --storage_->rc_) { delete[] storage_; }
             storage_ = nullptr;
         }
         size_ = 0;
