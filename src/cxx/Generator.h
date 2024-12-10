@@ -39,6 +39,7 @@ template <typename T> struct Coro final : RefCounted<Coro<T>> {
 };
 
 template <typename T> struct CoroIteratorBase {
+    using value_type = T;
     Ref<Coro<T>> coro;
     bool operator==(std::default_sentinel_t) { return coro->done(); }
 };
