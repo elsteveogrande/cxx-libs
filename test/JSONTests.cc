@@ -12,6 +12,7 @@ template <typename T> void expectJSONResult(cxx::String str, T expr) {
     std::cerr << "expect: " << str << std::endl;
     std::stringstream ss;
     cxx::JSON(expr).write(ss);
+    ss.flush();
     std::cerr << "actual: " << ss.str() << std::endl;
     assert(str == cxx::String(ss.str()));
 }
@@ -33,8 +34,8 @@ int main() {
     expectJSONResult("[1,2,3]", std::vector<int> {1, 2, 3});
 
     expectJSONResult(
-            R"(["hello","world","a","b","c"])",
-            cxx::String("hello world a b c").split(' '));
+            R"(["a","b","c","d","e"])",
+            cxx::String("a b c d e").split(' '));
 
     return 0;
 }
