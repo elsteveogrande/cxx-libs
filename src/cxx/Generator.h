@@ -79,7 +79,7 @@ template <typename T> struct Generator final {
             : coro_(rhs.coro_) {}
 
     template <typename I, typename J, typename U = typename I::value_type>
-    static Generator<typename I::value_type> of(I it, J end, U const& = U()) {
+    static Generator<typename I::value_type> of(I it, J end) {
         for (; it != end; ++it) {
             co_yield *it;
         }

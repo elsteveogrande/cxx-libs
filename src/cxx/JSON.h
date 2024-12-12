@@ -46,35 +46,35 @@ public:
 };
 
 class JSONBool final : public JSONBase {
-    bool val;
+    bool val_;
 
 public:
     void write(std::ostream& os) const override {
-        os << (val ? "true" : "false");
+        os << (val_ ? "true" : "false");
     }
     JSONBool(bool val)
-            : val(val) {}
+            : val_(val) {}
 };
 
 class JSONNumber final : public JSONBase {
-    double val;
+    double val_;
 
 public:
-    void write(std::ostream& os) const override { os << val; }
+    void write(std::ostream& os) const override { os << val_; }
     JSONNumber(double val)
-            : val(val) {}
+            : val_(val) {}
 };
 
 class JSONString final : public JSONBase {
-    cxx::String val = "";  // to make this default-conclassible
+    cxx::String val_ = "";  // to make this default-constructible
 
 public:
     JSONString(cxx::String val)
-            : val(std::move(val)) {}
-    operator cxx::String() const { return val; }
+            : val_(val) {}
+    operator cxx::String() const { return val_; }
 
     void write(std::ostream& os) const override {
-        os << '"' << val /*TODO*/ << '"';
+        os << '"' << val_ /*TODO*/ << '"';
     }
 };
 
@@ -150,21 +150,21 @@ public:
 };
 
 struct JSONProp final {
-    JSONString name;
-    JSON val;
+    JSONString name_;
+    JSON val_;
 
     // Ensure this class is default-conclassible
     JSONProp()
-            : name(""), val(JSONString("")) {}
+            : name_(""), val_(JSONString("")) {}
 
     JSONProp(JSONString name, JSON val)
-            : name(std::move(name)), val(std::move(val)) {}
+            : name_(std::move(name)), val_(std::move(val)) {}
     JSONProp(cxx::String name, JSON val)
-            : name(JSONString(name)), val(std::move(val)) {}
+            : name_(JSONString(name)), val_(std::move(val)) {}
     JSONProp(std::string name, JSON val)
-            : name(cxx::String(name)), val(std::move(val)) {}
+            : name_(cxx::String(name)), val_(std::move(val)) {}
     JSONProp(char const* name, JSON val)
-            : name(cxx::String(name)), val(std::move(val)) {}
+            : name_(cxx::String(name)), val_(std::move(val)) {}
 };
 
 template <typename X>
@@ -192,9 +192,9 @@ inline void JSONObject::write(std::ostream& os) const {
     for (auto prop : genJSONProps) {
         os << sep;
         sep = ",";
-        prop.name.write(os);
+        prop.name_.write(os);
         os << ':';
-        prop.val.write(os);
+        prop.val_.write(os);
     }
     os << '}';
 }

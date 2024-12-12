@@ -120,23 +120,23 @@ msan: build/UtilTests.msan build/StackTraceTests.msan build/ExceptionTests.msan 
 	true && build/UtilTests.msan && build/StackTraceTests.msan && build/ExceptionTests.msan && build/RefTests.msan && build/GeneratorTests.msan && build/StringTests.msan && build/JSONTests.msan
 
 build/UtilTests.msan: test/UtilTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/UtilTests.msan test/UtilTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/UtilTests.msan test/UtilTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/StackTraceTests.msan: test/StackTraceTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StackTraceTests.msan test/StackTraceTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StackTraceTests.msan test/StackTraceTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/ExceptionTests.msan: test/ExceptionTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/ExceptionTests.msan test/ExceptionTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/ExceptionTests.msan test/ExceptionTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/RefTests.msan: test/RefTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/RefTests.msan test/RefTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/RefTests.msan test/RefTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/GeneratorTests.msan: test/GeneratorTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/GeneratorTests.msan test/GeneratorTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/GeneratorTests.msan test/GeneratorTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/StringTests.msan: test/StringTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StringTests.msan test/StringTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/StringTests.msan test/StringTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 
 build/JSONTests.msan: test/JSONTests.cc all_headers builddir
-	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/JSONTests.msan test/JSONTests.cc -fsanitize-ignorelist=ignorelist.msan.txt
+	$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize=memory -o build/JSONTests.msan test/JSONTests.cc -fsanitize-ignorelist=ignorelist.msan.txt -fsanitize-memory-track-origins
 

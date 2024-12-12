@@ -77,7 +77,7 @@ struct String final : StringBase {
     // TODO!  Union all these instead of wasting storage
     HeapString* storage_ {nullptr};
     char const* literal_ {nullptr};
-    char small_[8] {0};
+    char small_[8] {0, 0, 0, 0, 0, 0, 0, 0};
 
     constexpr Type _type() const override { return type_; }
 
@@ -151,20 +151,7 @@ struct String final : StringBase {
         return *this;
     }
 
-    constexpr String(String&& _rhs) {
-        // TODO this can be optimized to avoid atomic inc / dec of refcount
-        String const& rhs = _rhs;
-        this->operator=(rhs);
-        _rhs._clear();
-    }
-
-    constexpr String& operator=(String&& _rhs) {
-        // TODO this can be optimized to avoid atomic inc / dec of refcount
-        String const& rhs = _rhs;
-        this->operator=(rhs);
-        _rhs._clear();
-        return *this;
-    }
+    // TODO moves can be optimized to avoid atomic inc / dec of refcount
 
     constexpr String(char const* src, size_t size) {
         size_ = size;

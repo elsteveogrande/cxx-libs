@@ -92,6 +92,7 @@ class Makefile:
             build = f"$(CLANG) @compile_flags.txt @debugging_flags.txt -fsanitize={san} -o {test_prog} {test_cc}"
             if suf == "msan":
                 build += " -fsanitize-ignorelist=ignorelist.msan.txt"
+                build += " -fsanitize-memory-track-origins"
             return Target(name=test_prog, deps=deps, build=build)
 
         def run_cmd(test_prog: str, suf: str) -> str:

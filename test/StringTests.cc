@@ -178,7 +178,7 @@ int main() {
         dump("moveAssign (before): s0", s0);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
-        String s1(std::move(s0));
+        String s1 = std::move(s0);
         dump("moveAssign  (after): s0", s0);
         dump("moveAssign  (after): s1", s1);
         // NOTE: the moved-from object not dependably in any particular

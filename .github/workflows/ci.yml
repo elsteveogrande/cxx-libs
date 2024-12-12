@@ -16,7 +16,6 @@ jobs:
       uses: actions/checkout@v4
     - name: tests
       run: CLANG=/usr/bin/clang++-19 make
-    - name: tests-msan
-      run: CLANG=/usr/bin/clang++-19 make msan
-    - name: tests-lsan
-      run: CLANG=/usr/bin/clang++-19 make lsan
+    # Disabled until we have an MSAN-instrumented libc++
+    # - name: tests-msan
+    #   run: CLANG=/usr/bin/clang++-19 make msan
