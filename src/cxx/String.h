@@ -1,4 +1,6 @@
 #pragma once
+#include <concepts>
+#include <cxx/detail/_ref.h>
 #include <type_traits>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
@@ -21,39 +23,6 @@ struct String;
 template <typename C>
 concept Character = std::is_same_v<char, std::remove_cvref_t<C>>;
 
-struct StringBase {
-    enum class Type { SMALL, LITERAL, SHARED };
-    constexpr static char const* kEmpty = "";
-
-    virtual ~StringBase() = default;
-
-    virtual Type _type() const = 0;
-    virtual size_t size() const = 0;
-    virtual char const* data() const = 0;
-
-    constexpr operator char const*() const { return data(); }
-    constexpr char operator[](size_t pos) const { return *(data() + pos); }
-
-    constexpr bool operator==(StringBase const& rhs) const {
-        if (this == &rhs) { return true; }
-        if (size() != rhs.size()) { return false; }
-        return (*this) == rhs.data();
-    }
-
-    constexpr bool operator<(char const* rhs) const { return compare(rhs) < 0; }
-    constexpr bool operator==(char const* rhs) const { return !compare(rhs); }
-
-    constexpr int compare(char const* rhs) const {
-        char const* a = data();
-        char const* b = rhs;
-        int ret = 0;
-        do {
-            ret = (*b - *a);
-        } while (ret == 0 && *a++ && *b++);
-        return ret;
-    }
-};
-
 struct HeapString {
     std::atomic_int64_t rc_ {0};
     char data_ {0};
@@ -74,31 +43,56 @@ struct HeapString {
     }
 };
 
-struct String final : StringBase {
+struct String final {
+    enum class Type { SMALL, LITERAL, SHARED };
+
     Type type_;
     size_t size_ {0};
-
     // TODO!  Union all these instead of wasting storage
     HeapString* storage_ {nullptr};
     char const* literal_ {nullptr};
     char small_[8] {0, 0, 0, 0, 0, 0, 0, 0};
 
-    constexpr Type _type() const override { return type_; }
+    constexpr static char const* kEmpty = "";
 
-    constexpr size_t size() const override { return size_; }
+    constexpr operator char const*() const { return data(); }
+    constexpr char operator[](size_t pos) const { return *(data() + pos); }
 
-    constexpr char const* data() const override {
+    constexpr bool operator==(String const& rhs) const {
+        if (this == &rhs) { return true; }
+        if (size() != rhs.size()) { return false; }
+        return (*this) == rhs.data();
+    }
+
+    constexpr bool operator<(char const* rhs) const { return compare(rhs) < 0; }
+    constexpr bool operator==(char const* rhs) const { return !compare(rhs); }
+
+    constexpr int compare(char const* rhs) const {
+        char const* a = data();
+        char const* b = rhs;
+        int ret = 0;
+        do {
+            ret = (*b - *a);
+        } while (ret == 0 && *a++ && *b++);
+        return ret;
+    }
+
+    constexpr Type _type() const { return type_; }
+
+    constexpr size_t size() const { return size_; }
+
+    constexpr char const* data() const {
         if consteval {
             switch (type_) {
-            case StringBase::Type::SMALL:   return small_;
-            case StringBase::Type::LITERAL: return literal_;
-            case StringBase::Type::SHARED:  std::unreachable();
+            case String::Type::SMALL:   return small_;
+            case String::Type::LITERAL: return literal_;
+            case String::Type::SHARED:  std::unreachable();
             }
         }
         switch (type_) {
-        case StringBase::Type::SMALL:   return small_;
-        case StringBase::Type::LITERAL: return literal_;
-        case StringBase::Type::SHARED:  return &storage_->data_;
+        case String::Type::SMALL:   return small_;
+        case String::Type::LITERAL: return literal_;
+        case String::Type::SHARED:  return &storage_->data_;
         }
     }
 
@@ -219,6 +213,7 @@ struct String final : StringBase {
     template <typename S = String>
     Generator<S> split(char sep);
 };
+static_assert(std::regular<String>);
 
 template <>
 Generator<String> String::split(char sep) {

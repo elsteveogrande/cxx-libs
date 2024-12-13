@@ -34,9 +34,11 @@ public:
 static_assert(sizeof(RefCount) == 8);
 static_assert(alignof(RefCount) == 8);
 
+struct RefBase {};
+
 class RefCountedBase {
 private:
-    friend class RefBase;
+    friend struct RefBase;
     RefCount rc;
 
 public:
@@ -44,19 +46,6 @@ public:
     inline void inc() const { rc.inc(); }
     inline bool dec() const { return rc.dec(); }
     int64_t count() const { return rc.refs_; }
-};
-
-class RefBase {
-protected:
-    RefCountedBase const* obj_ {nullptr};
-
-    RefBase(RefCountedBase const* obj) : obj_(obj) {}
-
-    inline void inc() { obj_->inc(); }
-    inline bool dec() { return obj_->dec(); }
-
-    RefCountedBase const* rawPointer() { return obj_; }
-    RefCountedBase const* rawPointer() const { return obj_; }
 };
 
 }  // namespace detail
