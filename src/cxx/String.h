@@ -160,7 +160,36 @@ struct String final : StringBase {
         return *this;
     }
 
-    // TODO moves can be optimized to avoid atomic inc / dec of refcount
+    constexpr String(String&& rhs) {
+        if consteval {
+            // Same as for copy; nothing different needed, since rhs cannot be SHARED
+            type_ = rhs.type_;
+            size_ = rhs.size_;
+            literal_ = rhs.literal_;
+            storage_ = nullptr;
+            cev_memcpy(small_, rhs.small_, 7);
+            small_[7] = 0;
+            return;
+        }
+        type_ = rhs.type_;
+        size_ = rhs.size_;
+        literal_ = rhs.literal_;
+        if (rhs.storage_) {
+            storage_ = rhs.storage_;  // no need to bump ref count
+            rhs.storage_ = nullptr;   // since we're stealing `storage_`
+        } else {
+            storage_ = nullptr;
+        }
+        ce_memcpy(small_, rhs.small_, 7);
+        small_[7] = 0;
+    }
+
+    constexpr String& operator=(String&& rhs) {
+        _clear();
+        new (this) String(rhs);
+        rhs._clear();
+        return *this;
+    }
 
     constexpr String(char const* src, size_t size) {
         size_ = size;
