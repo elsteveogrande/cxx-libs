@@ -6,6 +6,7 @@
 #include <functional>
 #include <iostream>
 #include <ostream>
+#include <ranges>
 
 namespace {
 
@@ -35,10 +36,22 @@ void testCreateGenAndIter() {
     assert(it == end);
 }
 
+void testRangeConformance() {
+    using G = cxx::Generator<int>;
+    G gen = foo();
+    auto begin = std::ranges::begin(gen);
+    auto end = std::ranges::end(gen);
+    (void) (begin == end);
+    (void) (begin != end);
+    (void) (end == begin);
+    (void) (end != begin);
+    int z = *begin;
+}
+
 void testGenMap() {
     std::function<int(int)> f = [](int x) { return x * 3; };
 
-    auto gen = foo().map(f);
+    auto gen = foo() | std::views::transform(f);
     auto end = gen.end();
     int x;
 
@@ -62,6 +75,7 @@ void testGenMap() {
 
 int main() {
     testCreateGenAndIter();
+    testRangeConformance();
     testGenMap();
     return 0;
 }

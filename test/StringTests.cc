@@ -39,23 +39,20 @@ void dump(char const* where, String const& s) {
     switch (s._type()) {
     case String::Type::SMALL:
         std::cerr << " (SMALL)   "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size()
-                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
-                  << " \"" << s.data() << '"';
+                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
+                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
         break;
 
     case String::Type::LITERAL:
         std::cerr << " (LITERAL) "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size()
-                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
-                  << " \"" << s.data() << '"';
+                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
+                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
         break;
 
     case String::Type::SHARED:
         std::cerr << " (SHARED)  "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size()
-                  << " ptr:" << R {12} << std::hex << std::intptr_t(s.data())
-                  << " \"" << s.data() << '"';
+                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
+                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
         break;
 
     default: std::unreachable();

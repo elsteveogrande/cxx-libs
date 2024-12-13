@@ -12,7 +12,8 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-template <class T> class Ref final : private detail::RefBase {
+template <class T>
+class Ref final : private detail::RefBase {
 
 public:
     struct NullRef final : Exception {};
@@ -27,17 +28,15 @@ public:
 
     ~Ref() noexcept(true) { clear(); }
 
-    Ref(T* obj) noexcept(true)
-            : detail::RefBase(obj) {
+    Ref() : detail::RefBase(nullptr) {}
+
+    Ref(T* obj) noexcept(true) : detail::RefBase(obj) {
         assert(obj);
         // obj's `rc` is zero-initialized, which indicates
         // a reference count of 1; don't increment it.
     }
 
-    Ref(Ref const& rhs) noexcept(true)
-            : detail::RefBase(rhs.get()) {
-        inc();
-    }
+    Ref(Ref const& rhs) noexcept(true) : detail::RefBase(rhs.get()) { inc(); }
 
     Ref& operator=(Ref const& rhs) noexcept(true) {
         clear();
@@ -45,8 +44,7 @@ public:
         return *this;
     }
 
-    Ref(Ref&& rhs) noexcept(true)
-            : detail::RefBase(rhs.get()) {
+    Ref(Ref&& rhs) noexcept(true) : detail::RefBase(rhs.get()) {
         // Steal this obj pointer, clear it in rhs.
         // Avoids the needs to increment / decrement refcount.
         rhs.obj_ = nullptr;
@@ -61,8 +59,7 @@ public:
     }
 
     template <typename U>
-        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
-    operator Ref<U>() {
+        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>) operator Ref<U>() {
         U* obj = (U*) this->rawPointer();
         inc();
         return Ref<U>(obj);
@@ -85,7 +82,8 @@ public:
     }
 };
 
-template <typename T> class RefCounted : public detail::RefCountedBase {
+template <typename T>
+class RefCounted : public detail::RefCountedBase {
 protected:
     virtual ~RefCounted() = default;
 
@@ -97,7 +95,8 @@ public:
     }
 };
 
-template <typename U, typename... A> static Ref<U> make(A&&... args) {
+template <typename U, typename... A>
+static Ref<U> make(A&&... args) {
     U* ptr = new U(std::forward<A>(args)...);
     return Ref<U>(ptr);
 }

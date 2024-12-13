@@ -22,9 +22,7 @@ struct Foo : cxx::RefCounted<Foo> {
 
     Foo() : cxx::RefCounted<Foo>() { ++ctorCount; }
 
-    Foo(int a, double b, std::string c) : a(a), b(b), c(std::move(c)) {
-        ++ctorCount;
-    }
+    Foo(int a, double b, std::string c) : a(a), b(b), c(std::move(c)) { ++ctorCount; }
 };
 
 }  // namespace

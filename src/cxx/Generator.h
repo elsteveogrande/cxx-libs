@@ -5,17 +5,19 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "cxx/Ref.h"
 
 #include <cassert>
+#include <concepts>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
-#include <functional>
-#include <iterator>
+#include <ranges>
 
 namespace cxx {
 
-template <typename T> struct Generator;
+template <std::semiregular T>
+struct Generator;
 
-template <typename T> struct Promise {
+template <std::semiregular T>
+struct Promise {
     T val;
     std::exception_ptr exc;
     std::suspend_always initial_suspend() { return {}; }
@@ -29,96 +31,87 @@ template <typename T> struct Promise {
     }
 };
 
-template <typename T> struct Coro final : RefCounted<Coro<T>> {
+template <std::semiregular T>
+struct Coro final : RefCounted<Coro<T>> {
     using Handle = std::coroutine_handle<Promise<T>>;
     Handle handle;
     ~Coro() { handle.destroy(); }
-    Coro(Promise<T>* promise)
-            : handle(Handle::from_promise(*promise)) {}
-    bool done() { return handle.done(); }
+    Coro(Promise<T>* promise) : handle(Handle::from_promise(*promise)) {}
+    virtual bool done() const { return handle.done(); }
 };
 
-template <typename T> struct CoroIteratorBase {
+template <std::semiregular T>
+struct CoroIteratorBase {
     using value_type = T;
-    Ref<Coro<T>> coro;
-    bool operator==(std::default_sentinel_t) { return coro->done(); }
+    using difference_type = int;
+
+    ~CoroIteratorBase() = default;
+    CoroIteratorBase() = default;
+
+    virtual bool done() const = 0;
+    bool operator==(CoroIteratorBase const& rhs) const { return done() == rhs.done(); }
 };
 
-template <typename T> struct ConstCoroIterator : CoroIteratorBase<T> {
-    ConstCoroIterator<T>& operator++(int) { return this->operator++(); }
-    ConstCoroIterator<T>& operator++() {
-        this->coro->handle.resume();
-        return *this;
-    }
-    T operator*() { return this->coro->handle.promise().val; }
-};
+template <std::semiregular T>
+struct CoroIterator final : CoroIteratorBase<T> {
+    Ref<Coro<T>> coro_;
 
-template <typename T> struct CoroIterator : ConstCoroIterator<T> {
+    CoroIterator() = default;
+    CoroIterator(Ref<Coro<T>> coro) : coro_(coro) {}
+    CoroIterator(CoroIterator const&) = default;
+    CoroIterator& operator=(CoroIterator const&) = default;
+
+    virtual bool done() const { return coro_->done(); }
+
+    T operator*() const { return coro_->handle.promise().val; }
+
     CoroIterator<T>& operator++(int) { return this->operator++(); }
     CoroIterator<T>& operator++() {
-        this->coro->handle.resume();
+        coro_->handle.resume();
         return *this;
     }
-    T operator*() { return this->coro->handle.promise().val; }
 };
 
-template <typename T> struct Generator final {
+template <std::semiregular T>
+struct CoroEndIterator final : CoroIteratorBase<T> {
+    CoroEndIterator() = default;
+    CoroEndIterator(CoroEndIterator const&) = default;
+    virtual bool done() const { return true; }
+};
+
+struct GeneratorBase {};
+
+template <std::semiregular T>
+struct Generator final : std::ranges::view_interface<Generator<T>>, GeneratorBase {
     using promise_type = Promise<T>;
     using handle_type = Coro<T>;
-    using iterator = CoroIterator<T>;
-    using const_iterator = ConstCoroIterator<T>;
 
     Ref<Coro<T>> coro_;
 
-    ~Generator() {}
+    ~Generator() = default;
+    Generator() = default;
 
-    explicit Generator(promise_type* promise)
-            : coro_(cxx::make<Coro<T>>(promise)) {}
+    explicit Generator(promise_type* promise) : coro_(cxx::make<Coro<T>>(promise)) {}
 
-    Generator(Generator<T> const& rhs)
-            : coro_(rhs.coro_) {}
+    Generator(Generator<T> const& rhs) : coro_(rhs.coro_) {}
 
-    template <typename I, typename J, typename U = typename I::value_type>
-    static Generator<typename I::value_type> of(I it, J end) {
-        for (; it != end; ++it) {
-            co_yield *it;
-        }
-    }
+    Generator& operator=(Generator<T> const& rhs) { coro_ = rhs.coro_; }
 
-    CoroIterator<T> begin() {
-        coro_->handle.resume();
-        return {coro_};
-    }
-
-    ConstCoroIterator<T> begin() const {
-        coro_->handle.resume();
-        return {coro_};
-    }
-
-    ConstCoroIterator<T> cbegin() const {
-        coro_->handle.resume();
-        return {coro_};
-    }
-
-    std::default_sentinel_t end() { return {}; }
-    std::default_sentinel_t end() const { return {}; }
-    std::default_sentinel_t cend() const { return {}; }
-
-    template <typename U> Generator<U> map(U (*func)(T)) {
-        return map(std::function<U(T)>(func));
-    }
-
-    template <typename U> Generator<U> map(std::function<U(T)> func) {
-        return map(begin(), end(), func);
-    }
-
-    template <typename U>
-    Generator<U> map(auto it, auto end, std::function<U(T)> func) {
-        while (it != end) {
-            co_yield func(*it);
-            ++it;
-        }
-    }
+    CoroIterator<T> begin() { return (CoroIterator<T> {coro_})++; }
+    CoroEndIterator<T> end() { return CoroEndIterator<T>(); }
+    CoroIterator<T> begin() const { return (CoroIterator<T> {coro_})++; }
+    CoroEndIterator<T> end() const { return CoroEndIterator<T>(); }
+    CoroIterator<T> cbegin() const { return (CoroIterator<T> {coro_})++; }
+    CoroEndIterator<T> cend() const { return CoroEndIterator<T>(); }
 };
+static_assert(std::semiregular<Generator<int>>);
+
+/** Something that is an instance of `Generator<T>` */
+template <typename G, typename T>
+concept Generates = requires(G&& gen) { static_cast<Generator<T> const*>(&gen); };
+
+/** Something that's a `Generator` but we don't care what type it generates. */
+template <typename G>
+concept GeneratesAny = requires { static_cast<GeneratorBase*>(new G); };
 
 }  // namespace cxx

@@ -7,7 +7,8 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-template <typename R> class Ref;
+template <typename R>
+class Ref;
 
 namespace detail {
 

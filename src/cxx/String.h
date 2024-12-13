@@ -1,4 +1,5 @@
 #pragma once
+#include <type_traits>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -16,6 +17,9 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 namespace cxx {
 
 struct String;
+
+template <typename C>
+concept Character = std::is_same_v<char, std::remove_cvref_t<C>>;
 
 struct StringBase {
     enum class Type { SMALL, LITERAL, SHARED };
@@ -113,14 +117,19 @@ struct String final : StringBase {
         _clear();
     }
 
-    constexpr String()
-            : String(kEmpty) {}
+    constexpr String() : String(kEmpty) {}
 
-    constexpr String(char const* src)
-            : String(src, ce_strlen(src)) {}
+    constexpr String(Character auto c) {
+        type_ = Type::SMALL;
+        ce_memset(small_, char(0), 8);
+        small_[0] = c;
+        literal_ = nullptr;
+        storage_ = nullptr;
+    }
 
-    constexpr String(std::string const& s)
-            : String(s.data(), s.size()) {}
+    constexpr String(char const* src) : String(src, ce_strlen(src)) {}
+
+    constexpr String(std::string const& s) : String(s.data(), s.size()) {}
 
     constexpr String(String const& rhs) {
         if consteval {
@@ -178,21 +187,25 @@ struct String final : StringBase {
         return {chars, total};
     }
 
-    Generator<String> split(char sep) const {
-        // TODO share a backing string and yield `SubString`s or something
-        size_t const size = this->size();
-        char const* data = this->data();
-        size_t start = 0;  // current [initial] part starts here
-        size_t pos = 0;    // current end position (exclusive)
-        while (pos < size) {
-            if (data[pos] == sep) {
-                co_yield String(data + start, pos - start);
-                start = pos + 1;  // skip past this char
-            }
-            ++pos;
-        }
-        co_yield String(data + start, pos - start);
-    }
+    template <typename S = String>
+    Generator<S> split(char sep);
 };
+
+template <>
+Generator<String> String::split(char sep) {
+    // TODO share a backing string and yield `SubString`s or something
+    size_t const size = this->size();
+    char const* data = this->data();
+    size_t start = 0;  // current [initial] part starts here
+    size_t pos = 0;    // current end position (exclusive)
+    while (pos < size) {
+        if (data[pos] == sep) {
+            co_yield String(data + start, pos - start);
+            start = pos + 1;  // skip past this char
+        }
+        ++pos;
+    }
+    co_yield String(data + start, pos - start);
+}
 
 }  // namespace cxx

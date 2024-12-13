@@ -1,5 +1,6 @@
 ---
 BasedOnStyle: LLVM
+ColumnLimit: 95
 
 PointerAlignment: Left
 QualifierAlignment: Right
@@ -32,6 +33,9 @@ BinPackParameters: false
 AllowAllConstructorInitializersOnNextLine: false
 AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+BreakBeforeConceptDeclarations: Always
+BreakTemplateDeclarations: Yes
 AlignConsecutiveShortCaseStatements:
   Enabled: true
   AcrossEmptyLines: false
@@ -39,7 +43,7 @@ AlignConsecutiveShortCaseStatements:
   AlignCaseColons: false
 
 SpaceAfterCStyleCast: true
-PackConstructorInitializers: NextLineOnly
+PackConstructorInitializers: CurrentLine
 RequiresClausePosition: WithFollowing
 
 PenaltyBreakBeforeFirstCallParameter: 200
