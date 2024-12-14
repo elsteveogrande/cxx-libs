@@ -27,52 +27,40 @@ inline constexpr int64_t ce_strlen(char const* data) {
 template <typename D>
 inline consteval void cev_memcpy(D* dest, D const* src, size_t size) {
     size_t i = 0uz;
-    for (; i < size; i++) {
-        dest[i] = (D&) src[i];
-    }
+    for (; i < size; i++) { dest[i] = (D&) src[i]; }
 }
 
 template <typename D>
 inline constexpr void ce_memcpy(D* dest, D const* src, size_t size) {
     if consteval { return cev_memcpy(dest, src, size); }
     size_t i = 0uz;
-    for (; i < size; i++) {
-        dest[i] = (D&) src[i];
-    }
+    for (; i < size; i++) { dest[i] = (D&) src[i]; }
 }
 
 template <typename D>
 inline consteval void cev_memset(D* dest, D byte, size_t size) {
     size_t i = 0uz;
-    for (; i < size; i++) {
-        dest[i] = byte;
-    }
+    for (; i < size; i++) { dest[i] = byte; }
 }
 
 template <typename D>
 inline constexpr void ce_memset(D* dest, D byte, size_t size) {
     if consteval { return cev_memset(dest, byte, size); }
     size_t i = 0uz;
-    for (; i < size; i++) {
-        dest[i] = byte;
-    }
+    for (; i < size; i++) { dest[i] = byte; }
 }
 
 template <typename D>
 inline consteval void cev_strncat(size_t pos, D* dest, D const* src) {
     size_t srcPos = 0;
-    while (*src[srcPos]) {
-        dest[pos++] = src[srcPos++];
-    }
+    while (*src[srcPos]) { dest[pos++] = src[srcPos++]; }
 }
 
 template <typename D>
 inline constexpr void ce_strncat(size_t pos, D* dest, D const* src) {
     if consteval { return cev_strncat(pos, dest, src); }
     size_t srcPos = 0;
-    while (*src[srcPos]) {
-        dest[pos++] = src[srcPos++];
-    }
+    while (*src[srcPos]) { dest[pos++] = src[srcPos++]; }
 }
 
 }  // namespace cxx

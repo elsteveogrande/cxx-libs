@@ -42,8 +42,7 @@ int main() {
     expectJSONResult("[1,2,3]", std::vector<int> {1, 2, 3});
 
     expectJSONResult(
-            R"(["hello","world","a","b","c","d","e"])",
-            cxx::String("hello world a b c d e").split(' '));
+            R"(["hello","world","a","b","c","d","e"])", cxx::String("hello world a b c d e").split(' '));
 
     expectJSONResult(R"({"x":"y"})", std::map<cxx::String, cxx::String> {{"x", "y"}});
     expectJSONResult(R"({"x":"y"})", std::map<std::string, std::string> {{"x", "y"}});

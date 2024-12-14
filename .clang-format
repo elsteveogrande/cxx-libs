@@ -1,6 +1,6 @@
 ---
 BasedOnStyle: LLVM
-ColumnLimit: 95
+ColumnLimit: 100
 
 PointerAlignment: Left
 QualifierAlignment: Right
@@ -41,6 +41,7 @@ AlignConsecutiveShortCaseStatements:
   AcrossEmptyLines: false
   AcrossComments: true
   AlignCaseColons: false
+AllowShortLoopsOnASingleLine: true
 
 SpaceAfterCStyleCast: true
 PackConstructorInitializers: CurrentLine

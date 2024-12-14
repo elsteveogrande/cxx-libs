@@ -34,30 +34,9 @@ struct R {
 };
 
 void dump(char const* where, String const& s) {
-    std::cerr << "@@@ " << L {40} << where << ": " << &s << ":";
-    std::cerr << " type:" << int(s._type());
-    switch (s._type()) {
-    case String::Type::SMALL:
-        std::cerr << " (SMALL)   "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
-                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
-        break;
-
-    case String::Type::LITERAL:
-        std::cerr << " (LITERAL) "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
-                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
-        break;
-
-    case String::Type::SHARED:
-        std::cerr << " (SHARED)  "
-                  << " size_:" << R {3} << std::dec << R {3} << s.size() << " ptr:" << R {12}
-                  << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"';
-        break;
-
-    default: std::unreachable();
-    }
-    std::cerr << std::endl;
+    std::cerr << "@@@ " << L {40} << where << ": " << &s << ":"
+              << " size:" << R {3} << std::dec << R {3} << s.size() << " data:" << R {12}
+              << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"' << std::endl;
 }
 
 String constructAndReturnStringFromBuffer() {
@@ -109,7 +88,7 @@ int main() {
     }
 
     {
-        String s = kLongStringLiteral;
+        String s(kLongStringLiteral);
         dump("constructCStringFromLiteral", s);
         assert(30 == s.size());
         assert(kLongStringLiteral != s.data());
@@ -192,11 +171,9 @@ int main() {
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
         String s1(std::move(s0));
-        // MSAN fails on these; accessing a moved-out-of
-        // object results in "read of uninitialized data".
-        // dump("moveConstruct  (after): s0", s0);
-        // assert(0 == s0.size());
-        // assert(0 == strcmp("", s0.data()));
+        dump("moveConstruct  (after): s0", s0);
+        assert(0 == s0.size());
+        assert(0 == strcmp("", s0.data()));
         dump("moveConstruct  (after): s1", s1);
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
@@ -213,11 +190,11 @@ int main() {
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
         s0 = std::move(s1);
         dump("moveAssign  (after): s0", s0);
-        // dump("moveAssign  (after): s1", s1);
+        dump("moveAssign  (after): s1", s1);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
-        // assert(0 == s1.size());
-        // assert(0 == strcmp("", s1.data()));
+        assert(0 == s1.size());
+        assert(0 == strcmp("", s1.data()));
     }
 
     {

@@ -131,9 +131,7 @@ public:
     JSON(AssocStringToAny auto const& map);
 
     // Can be applied to views to automagically convert JSON-able things to JSON
-    constexpr static auto transform = std::views::transform([](auto&& val) {
-        return JSON(val);
-    });
+    constexpr static auto transform = std::views::transform([](auto&& val) { return JSON(val); });
 };
 static_assert(std::semiregular<JSON>);
 
@@ -147,9 +145,7 @@ public:
     void write(std::ostream& os) const override;
 
     static Generator<JSON> asGenerator(auto it, auto end) {
-        for (; it != end; ++it) {
-            co_yield *it;
-        }
+        for (; it != end; ++it) { co_yield *it; }
     }
 
     template <typename G>
@@ -182,9 +178,7 @@ class JSONObject final : public JSONBase {
     cxx::Generator<JSONProp> genJSONProps;
 
     static cxx::Generator<JSONProp> genJSONPropsFor(AssocStringToAny auto const& map) {
-        for (auto const& entry : map) {
-            co_yield {{entry.first}, JSON(entry.second)};
-        }
+        for (auto const& entry : map) { co_yield {{entry.first}, JSON(entry.second)}; }
     }
 
 public:

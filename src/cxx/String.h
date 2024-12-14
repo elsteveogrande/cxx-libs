@@ -1,15 +1,13 @@
 #pragma once
-#include <concepts>
-#include <cxx/detail/_ref.h>
-#include <type_traits>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "Generator.h"
+#include "Ref.h"
 #include "Util.h"
 
-#include <atomic>
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -17,43 +15,90 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <utility>
 
 namespace cxx {
+namespace detail {
 
-struct String;
+constexpr static char const* kEmpty = "";
+constexpr static size_t kSmallMax = 15;
 
-template <typename C>
-concept Character = std::is_same_v<char, std::remove_cvref_t<C>>;
-
-struct HeapString {
-    std::atomic_int64_t rc_ {0};
+/**
+ * Array of characters created with `new`; note that this struct only houses the first
+ * char, and is over-allocated, so the rest of the string goes beyond this structure.
+ */
+struct HeapString final : RefCounted<HeapString> {
+    /** First byte of character array (the rest of the allocated bytes are just past this one) */
     char data_ {0};
 
-    static HeapString* make(size_t size) {
-        auto bytes = sizeof(HeapString) + size;
-        char* data = new char[bytes];
-        return new (data) HeapString();
-    }
-
     static HeapString* make(char const* src, size_t size) {
-        auto bytes = sizeof(HeapString) + size;
-        char* data = new char[bytes];
-        auto* ret = new (data) HeapString();
-        ce_memcpy(data + 8, src, size);
-        *(data + 8 + size) = 0;
+        auto bytes = sizeof(HeapString) + size;  // accomodates HeapString + chars + NUL
+        char* data = new char[bytes];            // home of our new HeapString
+        auto* ret = new (data) HeapString();     // "bless" this new HeapString instance
+        ce_memcpy(&ret->data_, src, size + 1);   // copy source string including its NUL
         return ret;
     }
 };
 
-struct String final {
-    enum class Type { SMALL, LITERAL, SHARED };
+struct SmallString final {
+    char data_[16] {0};
 
-    Type type_;
-    size_t size_ {0};
-    // TODO!  Union all these instead of wasting storage
-    HeapString* storage_ {nullptr};
-    char const* literal_ {nullptr};
-    char small_[8] {0, 0, 0, 0, 0, 0, 0, 0};
+    constexpr SmallString() = default;
+    constexpr SmallString(char const* src, size_t offset, size_t size) {
+        auto* const s = src + offset;
+        auto* const d = data_;
+        size_t i = 0;
+        for (; i < size; i++) { d[i] = s[i]; }
+        for (; i < size; i++) { data_[i] = 0; }
+    }
+};
+static_assert(sizeof(SmallString) <= 16);
+static_assert(std::semiregular<SmallString>);
 
-    constexpr static char const* kEmpty = "";
+struct RegString final {
+    char const* data_ {kEmpty};
+    Ref<HeapString> heapRef_ {};  // empty IFF data_ is a literal string
+};
+static_assert(sizeof(RegString) <= 16);
+static_assert(std::semiregular<RegString>);
+
+}  // namespace detail
+
+class String final {
+    size_t size_;
+    union Storage {
+        detail::SmallString small_;
+        // RegString regular_;
+    } storage_;
+
+    consteval static Storage buildStorageCEV(char const* src, size_t offset, size_t size) {
+        if (size <= detail::kSmallMax) { return Storage {.small_ = {src, offset, size}}; }
+        std::unreachable();
+    }
+
+    constexpr static Storage buildStorage(char const* src, size_t offset, size_t size) {
+        if consteval { return buildStorageCEV(src, offset, size); }
+        if (size <= detail::kSmallMax) { return Storage {.small_ = {src, offset, size}}; }
+        std::unreachable();
+    }
+
+public:
+    constexpr ~String() {
+        if consteval { return; }
+    }
+
+    constexpr String(char const* src, size_t offset, size_t size)
+            : size_(size)
+            , storage_(buildStorage(src, offset, size)) {}
+
+    constexpr String() : String(detail::kEmpty, 0, 0) {}
+
+    constexpr size_t size() const { return size_; }
+
+    constexpr char const* data() const {
+        if (size_ <= detail::kSmallMax) { return storage_.small_.data_; }
+        std::unreachable();
+    }
+
+    constexpr String(std::string const& s) : String(s.data(), 0, s.size()) {}
+    constexpr String(char const* src) : String(src, 0, ce_strlen(src)) {}
 
     constexpr operator char const*() const { return data(); }
     constexpr char operator[](size_t pos) const { return *(data() + pos); }
@@ -61,7 +106,7 @@ struct String final {
     constexpr bool operator==(String const& rhs) const {
         if (this == &rhs) { return true; }
         if (size() != rhs.size()) { return false; }
-        return (*this) == rhs.data();
+        return (*this) == rhs.data();  // delegate to `operator==(char const*)`
     }
 
     constexpr bool operator<(char const* rhs) const { return compare(rhs) < 0; }
@@ -71,134 +116,8 @@ struct String final {
         char const* a = data();
         char const* b = rhs;
         int ret = 0;
-        do {
-            ret = (*b - *a);
-        } while (ret == 0 && *a++ && *b++);
+        do { ret = (*b - *a); } while (ret == 0 && *a++ && *b++);
         return ret;
-    }
-
-    constexpr Type _type() const { return type_; }
-
-    constexpr size_t size() const { return size_; }
-
-    constexpr char const* data() const {
-        if consteval {
-            switch (type_) {
-            case String::Type::SMALL:   return small_;
-            case String::Type::LITERAL: return literal_;
-            case String::Type::SHARED:  std::unreachable();
-            }
-        }
-        switch (type_) {
-        case String::Type::SMALL:   return small_;
-        case String::Type::LITERAL: return literal_;
-        case String::Type::SHARED:  return &storage_->data_;
-        }
-    }
-
-    constexpr void _clear() {
-        type_ = Type::SMALL;
-        size_ = 0;
-        small_[0] = 0;
-        if (storage_) {
-            if (-1 == --storage_->rc_) { delete[] storage_; }
-            storage_ = nullptr;
-        }
-    }
-
-    constexpr ~String() {
-        if consteval { return; }
-        _clear();
-    }
-
-    constexpr String() : String(kEmpty) {}
-
-    constexpr String(Character auto c) {
-        type_ = Type::SMALL;
-        ce_memset(small_, char(0), 8);
-        small_[0] = c;
-        literal_ = nullptr;
-        storage_ = nullptr;
-    }
-
-    constexpr String(char const* src) : String(src, ce_strlen(src)) {}
-
-    constexpr String(std::string const& s) : String(s.data(), s.size()) {}
-
-    constexpr String(String const& rhs) {
-        if consteval {
-            type_ = rhs.type_;
-            size_ = rhs.size_;
-            literal_ = rhs.literal_;
-            storage_ = nullptr;
-            cev_memcpy(small_, rhs.small_, 7);
-            small_[7] = 0;
-            return;
-        }
-        type_ = rhs.type_;
-        size_ = rhs.size_;
-        literal_ = rhs.literal_;
-        if (rhs.storage_) {
-            ++rhs.storage_->rc_;
-            storage_ = rhs.storage_;
-        } else {
-            storage_ = nullptr;
-        }
-        ce_memcpy(small_, rhs.small_, 7);
-        small_[7] = 0;
-    }
-
-    constexpr String& operator=(String const& rhs) {
-        _clear();
-        new (this) String(rhs);
-        return *this;
-    }
-
-    constexpr String(String&& rhs) {
-        if consteval {
-            // Same as for copy; nothing different needed, since rhs cannot be SHARED
-            type_ = rhs.type_;
-            size_ = rhs.size_;
-            literal_ = rhs.literal_;
-            storage_ = nullptr;
-            cev_memcpy(small_, rhs.small_, 7);
-            small_[7] = 0;
-            return;
-        }
-        type_ = rhs.type_;
-        size_ = rhs.size_;
-        literal_ = rhs.literal_;
-        if (rhs.storage_) {
-            storage_ = rhs.storage_;  // no need to bump ref count
-            rhs.storage_ = nullptr;   // since we're stealing `storage_`
-        } else {
-            storage_ = nullptr;
-        }
-        ce_memcpy(small_, rhs.small_, 7);
-        small_[7] = 0;
-    }
-
-    constexpr String& operator=(String&& rhs) {
-        _clear();
-        new (this) String(rhs);
-        rhs._clear();
-        return *this;
-    }
-
-    constexpr String(char const* src, size_t size) {
-        size_ = size;
-        if consteval {
-            if (size < 8) {
-                type_ = Type::SMALL;
-                cev_memcpy(small_, src, size);
-            } else {
-                type_ = Type::LITERAL;
-                literal_ = src;
-            }
-            return;
-        }
-        type_ = Type::SHARED;
-        storage_ = HeapString::make(src, size);
     }
 
     constexpr String operator+(String const& rhs) const {
@@ -207,29 +126,30 @@ struct String final {
         ce_memcpy(chars, data(), size());
         ce_memcpy(chars + size(), rhs.data(), rhs.size());
         chars[total] = 0;
-        return {chars, total};
+        return {chars, 0, total};
     }
 
+    // `String` is not yet complete, so use a placeholder S.
+    // This will be instantiated out-of-line below.
     template <typename S = String>
     Generator<S> split(char sep);
 };
 static_assert(std::regular<String>);
+static_assert(sizeof(String) == 24);
 
 template <>
 Generator<String> String::split(char sep) {
-    // TODO share a backing string and yield `SubString`s or something
     size_t const size = this->size();
     char const* data = this->data();
     size_t start = 0;  // current [initial] part starts here
     size_t pos = 0;    // current end position (exclusive)
-    while (pos < size) {
+    for (; pos < size; ++pos) {
         if (data[pos] == sep) {
-            co_yield String(data + start, pos - start);
+            co_yield String(data, start, pos - start);
             start = pos + 1;  // skip past this char
         }
-        ++pos;
     }
-    co_yield String(data + start, pos - start);
+    co_yield String(data + start, start, pos - start);
 }
 
 }  // namespace cxx

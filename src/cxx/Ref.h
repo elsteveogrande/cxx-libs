@@ -1,6 +1,4 @@
 #pragma once
-#include <concepts>
-#include <cstdint>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -8,7 +6,9 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "detail/_ref.h"
 
 #include <cassert>
+#include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -29,31 +29,32 @@ public:
         obj_ = nullptr;
     }
 
-    ~Ref() noexcept(true) { clear(); }
+    constexpr ~Ref() noexcept(true) { clear(); }
 
-    Ref() = default;
+    constexpr Ref() = default;
 
-    Ref(T* obj) noexcept(true) : obj_(obj) {
-        assert(obj);
+    constexpr Ref(T* obj) noexcept(true) : obj_(obj) {
         // obj's `rc` is zero-initialized, which indicates
         // a reference count of 1; don't increment it.
     }
 
-    Ref(Ref const& rhs) noexcept(true) : obj_(rhs.get()) { obj_->inc(); }
+    constexpr Ref(Ref const& rhs) noexcept(true) : obj_(rhs.get()) {
+        if (obj_) { obj_->inc(); }
+    }
 
-    Ref& operator=(Ref const& rhs) noexcept(true) {
+    constexpr Ref& operator=(Ref const& rhs) noexcept(true) {
         clear();
         new (this) Ref(rhs);
         return *this;
     }
 
-    Ref(Ref&& rhs) noexcept(true) : obj_(rhs.get()) {
+    constexpr Ref(Ref&& rhs) noexcept(true) : obj_(rhs.get()) {
         // Steal this obj pointer, clear it in rhs.
         // Avoids the needs to increment / decrement refcount.
         rhs.obj_ = nullptr;
     }
 
-    Ref& operator=(Ref&& rhs) noexcept(true) {
+    constexpr Ref& operator=(Ref&& rhs) noexcept(true) {
         // Steal this obj pointer, clear it in rhs.
         // Avoids the needs to increment / decrement refcount.
         this->obj_ = rhs.obj_;
@@ -62,24 +63,25 @@ public:
     }
 
     template <typename U>
-        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>) operator Ref<U>() {
+        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
+    constexpr operator Ref<U>() {
         U* obj = (U*) obj_;
-        obj_->inc();
+        if (obj) { obj->inc(); }
         return Ref<U>(obj);
     }
 
-    T* get() noexcept(true) { return (T*) obj_; }
-    T const* get() const noexcept(true) { return (T const*) obj_; }
+    constexpr T* get() noexcept(true) { return (T*) obj_; }
+    constexpr T const* get() const noexcept(true) { return (T const*) obj_; }
 
-    T* operator->() noexcept(true) { return get(); }
-    T const* operator->() const noexcept(true) { return get(); }
+    constexpr T* operator->() noexcept(true) { return get(); }
+    constexpr T const* operator->() const noexcept(true) { return get(); }
 
-    T& operator*() {
+    constexpr T& operator*() {
         if (!obj_) { throw NullRef(); }
         return *obj_;
     }
 
-    T const& operator*() const {
+    constexpr T const& operator*() const {
         if (!obj_) { throw NullRef(); }
         return *obj_;
     }
@@ -91,13 +93,6 @@ template <typename T>
 class RefCounted : public detail::RefCountedBase {
 protected:
     virtual ~RefCounted() = default;
-
-public:
-    Ref<T> ref() noexcept(true) {
-        auto ret = Ref((T*) (this));
-        inc();
-        return ret;
-    }
 };
 
 template <typename U, typename... A>
