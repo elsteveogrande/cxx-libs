@@ -23,12 +23,10 @@ protected:
 public:
     struct NullRef final : Exception {};
 
-    void clear() noexcept(true) {
-        if (obj_ && obj_->dec()) {
-            auto* obj = obj_;
-            obj_ = nullptr;
-            delete obj;
-        }
+    constexpr void clear() noexcept(true) {
+        if (!obj_) { return; }
+        if (obj_->dec()) { delete obj_; }
+        obj_ = nullptr;
     }
 
     ~Ref() noexcept(true) { clear(); }
