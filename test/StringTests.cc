@@ -22,7 +22,7 @@ struct L {
     friend std::ostream& operator<<(std::ostream& os, L const& x) {
         os << std::setw(x.n) << std::left;
         return os;
-    }
+    };
 };
 
 struct R {
@@ -30,14 +30,8 @@ struct R {
     friend std::ostream& operator<<(std::ostream& os, R const& x) {
         os << std::setw(x.n) << std::right;
         return os;
-    }
+    };
 };
-
-void dump(char const* where, String const& s) {
-    std::cerr << "@@@ " << L {40} << where << ": " << &s << ":"
-              << " size:" << R {3} << std::dec << R {3} << s.size() << " data:" << R {12}
-              << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"' << std::endl;
-}
 
 String constructAndReturnStringFromBuffer() {
     char chars[31];
@@ -47,157 +41,171 @@ String constructAndReturnStringFromBuffer() {
     return s;
 }
 
+char const* where = nullptr;
+
+void dump(String const& s) {
+    std::cerr << "@@@ " << L {40} << where << ": " << &s << ":"
+              << " size:" << R {3} << std::dec << R {3} << s.size() << " data:" << R {12}
+              << std::hex << std::intptr_t(s.data()) << " \"" << s.data() << '"' << std::endl;
+}
+
+struct Test {
+    Test(char const* name, auto func) {
+        where = name;
+        func();
+    }
+};
+
 }  // namespace
 
 int main() {
-    {
+    Test("constructEmptyCStringCE", [] {
         constexpr String const s;
-        dump("constructEmptyCStringCE", s);
+        dump(s);
         assert(0 == s.size());
         assert(s.data());
         assert(0 == strcmp("", s.data()));
-    }
+    });
 
-    {
+    Test("constructEmptyCString", [] {
         String const s;
-        dump("constructEmptyCString", s);
+        dump(s);
         assert(0 == s.size());
         assert(s.data());
         assert(0 == strcmp("", s.data()));
-    }
+    });
 
-    {
+    Test("constructTinyCStringCE", [] {
         constexpr String s = "AAAAA";
-        dump("constructTinyCStringCE", s);
+        dump(s);
         assert(5 == s.size());
         assert(0 == strcmp("AAAAA", s.data()));
-    }
+    });
 
-    {
+    Test("constructTinyCString", [] {
         String s = "AAAAA";
-        dump("constructTinyCString", s);
+        dump(s);
         assert(5 == s.size());
         assert(0 == strcmp("AAAAA", s.data()));
-    }
+    });
 
-    {
+    Test("constructCStringFromLiteralCE", [] {
         constexpr String s(kLongStringLiteral);
-        dump("constructCStringFromLiteralCE", s);
+        dump(s);
         assert(30 == s.size());
         assert(kLongStringLiteral == s.data());
-    }
+    });
 
-    {
+    Test("constructCStringFromLiteral", [] {
         String s(kLongStringLiteral);
-        dump("constructCStringFromLiteral", s);
+        dump(s);
         assert(30 == s.size());
         assert(kLongStringLiteral != s.data());
         assert(0 == strcmp(kLongStringLiteral, s.data()));
-    }
+    });
 
-    {
+    Test("constructCStringFromBuffer", [] {
         char chars[31];
         memcpy(chars, "stringWhichHasThirtyCharacters", 30);
         chars[30] = 0;
         String s = chars;
-        dump("constructCStringFromBuffer", s);
+        dump(s);
         assert(30 == s.size());
         assert(chars != s.data());
         assert(0 == strcmp(kLongStringLiteral, s.data()));
-    }
+    });
 
-    {
+    Test("constructCStringFromBufferAndReturn", [] {
         auto const s = constructAndReturnStringFromBuffer();
-        dump("constructCStringFromBufferAndReturn", s);
+        dump(s);
         assert(30 == s.size());
         assert(0 == strcmp(kLongStringLiteral, s.data()));
-    }
+    });
 
-    {
+    Test("copyConstructCE", [] {
         static constexpr String s0 = kLongStringLiteral;
-        dump("copyConstructCE", s0);
+        dump(s0);
         constexpr String s(s0);
-        dump("copyConstructCE", s);
+        dump(s);
         assert(s.size() == s0.size());
         assert(s.data() == s0.data());
-    }
+    });
 
-    {
+    Test("copyConstruct", [] {
         String s0 = kLongStringLiteral;
-        dump("copyConstruct", s0);
+        dump(s0);
         String s1(s0);
-        dump("copyConstruct", s1);
+        dump(s1);
         assert(s1.size() == s0.size());
         assert(s1.data() == s0.data());
-    }
+    });
 
-    {
+    Test("copyAssign", [] {
         String s0;
         String s1 = kLongStringLiteral;
-        dump("copyAssign (before): s0", s0);
-        dump("copyAssign (before): s1", s1);
+        dump(s0);
+        dump(s1);
         assert(0 == s0.size());
         assert(0 == strcmp("", s0.data()));
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
         s0 = s1;
-        dump("copyAssign  (after): s0", s0);
-        dump("copyAssign  (after): s1", s1);
+        dump(s0);
+        dump(s1);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
-    }
+    });
 
-    {
+    Test("moveAssign", [] {
         constexpr String s0 = kLongStringLiteral;
-        dump("moveAssign (before): s0", s0);
+        dump(s0);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
         String s1 = std::move(s0);
-        dump("moveAssign  (after): s0", s0);
-        dump("moveAssign  (after): s1", s1);
-        // NOTE: the moved-from object not dependably in any particular
-        // state, for some reason, in "CE mode".
+        dump(s0);
+        dump(s1);
+        // Doesn't work in constexpr context?
         // assert(0 == s0.size());
         // assert(0 == strcmp("", s0.data()));
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
-    }
+    });
 
-    {
+    Test("moveConstruct", [] {
         String s0 = kLongStringLiteral;
-        dump("moveConstruct (before): s0", s0);
+        dump(s0);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
         String s1(std::move(s0));
-        dump("moveConstruct  (after): s0", s0);
+        dump(s0);
         assert(0 == s0.size());
         assert(0 == strcmp("", s0.data()));
-        dump("moveConstruct  (after): s1", s1);
+        dump(s1);
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
-    }
+    });
 
-    {
+    Test("moveAssign", [] {
         String s0 = "foo";
         String s1 = kLongStringLiteral;
-        dump("moveAssign (before): s0", s0);
-        dump("moveAssign (before): s1", s1);
+        dump(s0);
+        dump(s1);
         assert(3 == s0.size());
         assert(0 == strcmp("foo", s0.data()));
         assert(30 == s1.size());
         assert(0 == strcmp(kLongStringLiteral, s1.data()));
         s0 = std::move(s1);
-        dump("moveAssign  (after): s0", s0);
-        dump("moveAssign  (after): s1", s1);
+        dump(s0);
+        dump(s1);
         assert(30 == s0.size());
         assert(0 == strcmp(kLongStringLiteral, s0.data()));
         assert(0 == s1.size());
         assert(0 == strcmp("", s1.data()));
-    }
+    });
 
-    {
+    Test("concatCE", [] {
         constexpr String s1 = "foo";
         constexpr String s2 = kLongStringLiteral;
         assert(33 == (s1 + s2).size());
@@ -205,9 +213,9 @@ int main() {
         assert('o' == (s1 + s2)[1]);
         assert('o' == (s1 + s2)[2]);
         assert('s' == (s1 + s2)[3]);
-    }
+    });
 
-    {
+    Test("concat", [] {
         String s1 = "foo";
         String s2 = kLongStringLiteral;
         assert(33 == (s1 + s2).size());
@@ -215,27 +223,28 @@ int main() {
         assert('o' == (s1 + s2)[1]);
         assert('o' == (s1 + s2)[2]);
         assert('s' == (s1 + s2)[3]);
-    }
+    });
 
-    {
+    Test("split", [] {
         String s = "hello world";
+        dump(s);
         auto gen = s.split(' ');
         auto end = gen.end();
         cxx::String w;
 
         auto it = gen.begin();
         w = *it;
-        std::cerr << w << std::endl;
+        dump(w);
         assert(w == "hello");
 
         ++it;
         w = *it;
-        std::cerr << w << std::endl;
+        dump(w);
         assert(w == "world");
 
         ++it;
         assert(it == end);
-    }
+    });
 
     return 0;
 }

@@ -34,11 +34,8 @@ public:
 static_assert(sizeof(RefCount) == 8);
 static_assert(alignof(RefCount) == 8);
 
-struct RefBase {};
-
 class RefCountedBase {
 private:
-    friend struct RefBase;
     RefCount rc;
 
 public:

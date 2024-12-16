@@ -20,7 +20,7 @@ UseTab: Never
 BraceWrapping:
   AfterClass: false
 AllowShortFunctionsOnASingleLine: true
-AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCpp11BracedList: true

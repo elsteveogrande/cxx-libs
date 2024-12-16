@@ -1,100 +1,123 @@
 #pragma once
+#include <type_traits>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "Generator.h"
-#include "Ref.h"
 #include "Util.h"
+#include "detail/_string.h"
 
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <utility>
 
 namespace cxx {
-namespace detail {
 
-constexpr static char const* kEmpty = "";
-constexpr static size_t kSmallMax = 15;
-
-/**
- * Array of characters created with `new`; note that this struct only houses the first
- * char, and is over-allocated, so the rest of the string goes beyond this structure.
- */
-struct HeapString final : RefCounted<HeapString> {
-    /** First byte of character array (the rest of the allocated bytes are just past this one) */
-    char data_ {0};
-
-    static HeapString* make(char const* src, size_t size) {
-        auto bytes = sizeof(HeapString) + size;  // accomodates HeapString + chars + NUL
-        char* data = new char[bytes];            // home of our new HeapString
-        auto* ret = new (data) HeapString();     // "bless" this new HeapString instance
-        ce_memcpy(&ret->data_, src, size + 1);   // copy source string including its NUL
-        return ret;
-    }
-};
-
-struct SmallString final {
-    char data_[16] {0};
-
-    constexpr SmallString() = default;
-    constexpr SmallString(char const* src, size_t offset, size_t size) {
-        auto* const s = src + offset;
-        auto* const d = data_;
-        size_t i = 0;
-        for (; i < size; i++) { d[i] = s[i]; }
-        for (; i < size; i++) { data_[i] = 0; }
-    }
-};
-static_assert(sizeof(SmallString) <= 16);
-static_assert(std::semiregular<SmallString>);
-
-struct RegString final {
-    char const* data_ {kEmpty};
-    Ref<HeapString> heapRef_ {};  // empty IFF data_ is a literal string
-};
-static_assert(sizeof(RegString) <= 16);
-static_assert(std::semiregular<RegString>);
-
-}  // namespace detail
+template <typename C>
+concept Character = std::is_same_v<char, std::remove_cv_t<C>>;
 
 class String final {
-    size_t size_;
+
+    uint64_t size_;
+
+    constexpr bool isSmall() const { return size_ <= detail::kSmallMax; }
+    constexpr bool isRegular() const { return !isSmall(); }
+
     union Storage {
-        detail::SmallString small_;
-        // RegString regular_;
+        detail::Small small_ {};
+        detail::Regular reg_;
+        constexpr Storage() = default;
+        constexpr Storage(detail::Small x) : small_(std::move(x)) {}
+        constexpr Storage(detail::Regular x) : reg_(std::move(x)) {}
     } storage_;
 
-    consteval static Storage buildStorageCEV(char const* src, size_t offset, size_t size) {
-        if (size <= detail::kSmallMax) { return Storage {.small_ = {src, offset, size}}; }
-        std::unreachable();
+    constexpr static Storage buildStorage(char const* src, size_t offset, size_t size) {
+        if (size <= detail::kSmallMax) { return {detail::Small {src, offset, size}}; }
+        if consteval { return {detail::Regular(src + offset, nullptr)}; }
+        auto* ptr = detail::HeapString::make(src + offset, size);
+        return {detail::Regular(&ptr->data_, ptr)};
     }
 
-    constexpr static Storage buildStorage(char const* src, size_t offset, size_t size) {
-        if consteval { return buildStorageCEV(src, offset, size); }
-        if (size <= detail::kSmallMax) { return Storage {.small_ = {src, offset, size}}; }
-        std::unreachable();
+    consteval void clearCEV() {
+        if (isSmall()) {
+            storage_.small_.clearCEV();
+        } else {
+            storage_.reg_.clearCEV();
+        }
+        size_ = 0;
+    }
+
+    constexpr void clear() {
+        if consteval { return clearCEV(); }
+        if (isSmall()) {
+            storage_.small_.clear();
+        } else {
+            storage_.reg_.clear();
+        }
+        new (this) String();
+    }
+
+    consteval String& copyFromCEV(String const& rhs) {
+        size_ = rhs.size_;
+        storage_ = rhs.storage_;
+        return *this;
+    }
+
+    constexpr String& copyFrom(String const& rhs) {
+        if consteval { return copyFromCEV(rhs); }
+        if (rhs.isRegular() && rhs.storage_.reg_.ptr_) { rhs.storage_.reg_.ptr_->retain(); }
+        size_ = rhs.size_;
+        storage_ = rhs.storage_;
+        return *this;
+    }
+
+    consteval String& moveFromCEV(String&& rhs) {
+        size_ = rhs.size_;
+        storage_ = rhs.storage_;
+        rhs.clearCEV();
+        return *this;
+    }
+
+    constexpr String& moveFrom(String&& rhs) {
+        if consteval { return moveFromCEV(std::move(rhs)); }
+        size_ = rhs.size_;
+        storage_ = rhs.storage_;
+        if (rhs.isRegular() && rhs.storage_.reg_.ptr_) { rhs.storage_.reg_.ptr_ = nullptr; }
+        rhs.clear();
+        return *this;
     }
 
 public:
-    constexpr ~String() {
-        if consteval { return; }
+    constexpr ~String() { clear(); }
+
+    /** Construct empty small string.  NB: this constructor zero-initializes this `String`. */
+    constexpr String() : String(detail::kEmpty, 0, 0) {}
+
+    constexpr String(String const& rhs) { copyFrom(rhs); }
+    constexpr String(String&& rhs) { moveFrom(std::move(rhs)); }
+    constexpr String& operator=(String const& rhs) { return copyFrom(rhs); }
+    constexpr String& operator=(String&& rhs) { return moveFrom(std::move(rhs)); }
+
+    template <Character C>
+    constexpr String(C c) : String() {
+        storage_.small_.data_[0] = c;
+        storage_.small_.data_[1] = 0;
+        size_ = 1;
     }
 
     constexpr String(char const* src, size_t offset, size_t size)
             : size_(size)
             , storage_(buildStorage(src, offset, size)) {}
 
-    constexpr String() : String(detail::kEmpty, 0, 0) {}
-
     constexpr size_t size() const { return size_; }
 
     constexpr char const* data() const {
-        if (size_ <= detail::kSmallMax) { return storage_.small_.data_; }
-        std::unreachable();
+        return isSmall() ? storage_.small_.data() : storage_.reg_.data();
     }
 
     constexpr String(std::string const& s) : String(s.data(), 0, s.size()) {}
@@ -149,7 +172,7 @@ Generator<String> String::split(char sep) {
             start = pos + 1;  // skip past this char
         }
     }
-    co_yield String(data + start, start, pos - start);
+    co_yield String(data, start, pos - start);
 }
 
 }  // namespace cxx
