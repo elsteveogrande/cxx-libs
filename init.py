@@ -14,7 +14,6 @@ import glob
 # This way we can test smaller / simpler components, make sure they function,
 # and then work our way up to the bigger / more-dependent parts.
 headers = [
-    "Util.h",
     "StackTrace.h",
     "Exception.h",
     "Ref.h",

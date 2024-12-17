@@ -3,7 +3,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "Generator.h"
-#include "Util.h"
 
 #include <atomic>
 #include <cassert>
@@ -21,6 +20,16 @@ namespace cxx::detail {
 constexpr static char const* kEmpty = "";
 constexpr static size_t kSmallMax = 15;
 
+constexpr size_t cstrlen(char const* data) { return std::string::traits_type::length(data); }
+
+constexpr void cmemcpy(char* dest, char const* src, size_t size) {
+    for (size_t i = 0; i < size; i++) { dest[i] = src[i]; }
+}
+
+constexpr void cmemzero(char* dest, size_t size) {
+    for (size_t i = 0; i < size; i++) { dest[i] = 0; }
+}
+
 /**
  * Array of characters created with `new`; note that this struct only houses the first
  * char, and is over-allocated, so the rest of the string goes beyond this structure.
@@ -37,11 +46,11 @@ struct HeapString final {
     char data_;
 
     static HeapString* make(char const* src, size_t size) {
-        auto bytes = sizeof(HeapString) + size;   // accomodates this struct + chars + NUL
-        char* data = new char[bytes];             // home of our new HeapString
-        auto* ret = (HeapString*) (data);         // ugly cast
-        ret->rc_ = 0;                             // initial refcount is 1 (repr. as zero)
-        ce_memcpy(&(ret->data_), src, size + 1);  // copy source string including its NUL
+        auto bytes = sizeof(HeapString) + size;  // accomodates this struct + chars + NUL
+        char* data = new char[bytes];            // home of our new HeapString
+        auto* ret = (HeapString*) (data);        // ugly cast
+        ret->rc_ = 0;                            // initial refcount is 1 (repr. as zero)
+        cmemcpy(&(ret->data_), src, size + 1);   // copy source string including its NUL
         return ret;
     }
 
@@ -66,8 +75,7 @@ struct Small final {
 
     char const* data() const { return data_; }
 
-    consteval void clearCEV() { cev_memset(data_, char(0), sizeof(data_)); }
-    constexpr void clear() { ce_memset(data_, char(0), sizeof(data_)); }
+    constexpr void clear() { cmemzero(data_, sizeof(data_)); }
 };
 
 struct Regular final {
@@ -87,10 +95,9 @@ struct Regular final {
 
     char const* data() const { return data_; }
 
-    consteval void clearCEV() { data_ = nullptr; }
-
     constexpr void clear() {
         data_ = nullptr;
+        if consteval { return; }
         auto* hs = ptr_;
         ptr_ = nullptr;
         if (hs) { hs->release(); }
@@ -126,22 +133,16 @@ class String final {
         return {detail::Regular(&ptr->data_, ptr)};
     }
 
+    // clang-format off
+
     consteval void clearCEV() {
-        if (isSmall()) {
-            storage_.small_.clearCEV();
-        } else {
-            storage_.reg_.clearCEV();
-        }
+        if (isSmall()) { storage_.small_.clear(); } else { storage_.reg_.clear(); }
         size_ = 0;
     }
 
     constexpr void clear() {
         if consteval { return clearCEV(); }
-        if (isSmall()) {
-            storage_.small_.clear();
-        } else {
-            storage_.reg_.clear();
-        }
+        if (isSmall()) { storage_.small_.clear(); } else { storage_.reg_.clear(); }
         new (this) String();
     }
 
@@ -175,6 +176,8 @@ class String final {
         return *this;
     }
 
+    // clang-format on
+
 public:
     constexpr ~String() { clear(); }
 
@@ -204,7 +207,7 @@ public:
     }
 
     constexpr String(std::string const& s) : String(s.data(), 0, s.size()) {}
-    constexpr String(char const* src) : String(src, 0, ce_strlen(src)) {}
+    constexpr String(char const* src) : String(src, 0, detail::cstrlen(src)) {}
 
     constexpr operator char const*() const { return data(); }
     constexpr char operator[](size_t pos) const { return *(data() + pos); }
@@ -229,8 +232,8 @@ public:
     constexpr String operator+(String const& rhs) const {
         auto total = size() + rhs.size();
         char chars[total + 1];
-        ce_memcpy(chars, data(), size());
-        ce_memcpy(chars + size(), rhs.data(), rhs.size());
+        detail::cmemcpy(chars, data(), size());
+        detail::cmemcpy(chars + size(), rhs.data(), rhs.size());
         chars[total] = 0;
         return {chars, 0, total};
     }
