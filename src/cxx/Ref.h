@@ -13,8 +13,10 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
+struct RefBase {};
+
 template <class T>
-class Ref final {
+class Ref final : public RefBase {
 
 protected:
     detail::RefCountedBase const* obj_ {nullptr};
