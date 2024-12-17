@@ -10,7 +10,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
-#include <utility>
 
 namespace cxx {
 
@@ -97,7 +96,7 @@ protected:
 
 template <typename U, typename... A>
 static Ref<U> make(A&&... args) {
-    U* ptr = new U(std::forward<A>(args)...);
+    U* ptr = new U(args...);
     return Ref<U>(ptr);
 }
 

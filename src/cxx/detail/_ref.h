@@ -12,37 +12,15 @@ class Ref;
 
 namespace detail {
 
-class RefCount final {
-private:
-    friend class RefCountedBase;
-
-    /** zero-constructible */
-    int64_t mutable refs_ {0};
-
-    /** casted as an atomic; safe, because it's correctly aligned */
-    std::atomic_int64_t& refs() const { return (std::atomic_int64_t&) refs_; }
-
-public:
-    /** Increment ref count */
-    inline void inc() const { ++refs(); }
-
-    /** Decrement ref count, and return whether it has now dropped to -1 */
-    inline bool dec() const { return (--refs() == -1); }
-
-    operator bool() const { return refs_ >= 0; }
-};
-static_assert(sizeof(RefCount) == 8);
-static_assert(alignof(RefCount) == 8);
-
 class RefCountedBase {
 private:
-    RefCount rc;
+    std::atomic_int64_t mutable rc_;
 
 public:
     virtual ~RefCountedBase() = default;
-    inline void inc() const { rc.inc(); }
-    inline bool dec() const { return rc.dec(); }
-    int64_t count() const { return rc.refs_; }
+    inline void inc() const { ++rc_; }
+    inline bool dec() const { return --rc_ == -1; }
+    int64_t count() const { return rc_; }
 };
 
 }  // namespace detail

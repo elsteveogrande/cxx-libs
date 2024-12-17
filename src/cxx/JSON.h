@@ -84,14 +84,12 @@ public:
 };
 
 class JSONString final : public JSONBase {
-    cxx::String val_ = "";  // to make this default-constructible
+    cxx::String val_ {};
 
 public:
-    JSONString(Stringable auto const& val) : val_ {val} {}
-
-    operator cxx::String() const { return val_; }
-
+    JSONString(Stringable auto val) : val_ {std::move(val)} {}
     void write(std::ostream& os) const override { os << '"' << val_ /*TODO*/ << '"'; }
+    operator cxx::String() const { return val_; }
 };
 
 class JSON final {
@@ -117,7 +115,7 @@ public:
     JSON(T val) : json_(make<JSONNumber>(val)) {}
 
     // JSONString: anything that cxx::String ctors accept
-    JSON(Stringable auto const& val) : json_(make<JSONString>(val)) {}
+    JSON(cxx::String val) : json_(make<JSONString>(val)) {}
 
     // JSONArray: any sequence (anything with [c]begin, [c]end), range, or view (including
     // `Generator`s), with several exclusions; see `SequenceAny`.
@@ -161,7 +159,7 @@ public:
 };
 
 struct JSONProp final {
-    JSONString name_;
+    JSON name_;
     JSON val_;
 
     // Ensure this class is default-conclassible
@@ -172,7 +170,6 @@ struct JSONProp final {
     JSONProp(std::string name, JSON val) : name_(cxx::String(name)), val_(std::move(val)) {}
     JSONProp(char const* name, JSON val) : name_(cxx::String(name)), val_(std::move(val)) {}
 };
-static_assert(std::semiregular<JSONProp>);
 
 class JSONObject final : public JSONBase {
     cxx::Generator<JSONProp> genJSONProps;
@@ -192,7 +189,6 @@ public:
 JSON::JSON(SequenceAny auto const& seq) : json_(make<JSONArray>(seq)) {}
 
 JSON::JSON(CanGenJSONProps auto const& obj) : json_(make<JSONObject>(obj)) {}
-
 JSON::JSON(AssocStringToAny auto const& obj) : json_(make<JSONObject>(obj)) {}
 
 inline void JSONArray::write(std::ostream& os) const {
