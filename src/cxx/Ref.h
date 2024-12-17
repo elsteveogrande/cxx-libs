@@ -3,13 +3,28 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "Exception.h"
-#include "detail/_ref.h"
 
+#include <atomic>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
+
+namespace cxx::detail {
+
+class RefCountedBase {
+private:
+    std::atomic_int64_t mutable rc_;
+
+public:
+    virtual ~RefCountedBase() = default;
+    inline void inc() const { ++rc_; }
+    inline bool dec() const { return --rc_ == -1; }
+    int64_t count() const { return rc_; }
+};
+
+}  // namespace cxx::detail
 
 namespace cxx {
 
