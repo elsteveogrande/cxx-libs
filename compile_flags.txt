@@ -14,6 +14,8 @@
 -Wno-gnu-array-member-paren-init
 -fexceptions
 -frtti
+-fno-omit-frame-pointer
+-momit-leaf-frame-pointer
 -march=native
 -UNDEBUG
 -isystem
