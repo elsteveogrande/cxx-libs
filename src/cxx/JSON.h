@@ -7,211 +7,117 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "cxx/String.h"
 
 #include <cassert>
-#include <concepts>
 #include <cstddef>
 #include <iostream>
-#include <ranges>
-#include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace cxx {
 
-/** For `JSONString`: anything you can pass to a cxx::String constructor */
-template <typename T>
-concept Stringable = requires(T&& val) { cxx::String(val); };
+/** Something that's literally a `bool` and not just convertible to a `bool` */
+template <typename B>
+concept Bool = std::is_same_v<std::remove_cv_t<B>, bool>;
 
-/**
- * For `JSONObject`: some kind of mapping, resembling an AssociativeContainer
- * (however this concept is not thorough, only checking for `mapped_type`).
- * https://en.cppreference.com/w/cpp/named_req/AssociativeContainer
- */
-template <typename A>
-concept AssocAny = requires(A&& assoc) { typename A::mapped_type; };
-
-/**
- * For `JSONObject`: like `AssocAny` but has `Stringable` keys.
- */
-template <typename A>
-concept AssocStringToAny = requires(A&& assoc) {
-    typename A::mapped_type;
-    Stringable<typename A::key_type>;
-};
-
-/** For `JSONObject`: something that can generate key-value pairs representing itself. */
-template <typename T>
-concept CanGenJSONProps = requires(T&& obj) { obj.genJSONProps(); };
-
-/**
- * For `JSONArray`: something that looks like a `ranges::view` and / or has `value_type`,
- * which includes `Generator`s; with several exceptions: exclude things that can be
- * iterated over but are map-like (they should be JSONObjects instead), or are
- * string-like (they should be JSONStrings).
- */
+/** Something accepted by a `cxx::String` constructor */
 template <typename S>
-concept SequenceAny =
-        (!AssocAny<S>) && (!CanGenJSONProps<S>) && (!Stringable<S>) &&
-        (std::ranges::view<S> || requires(S& seq) { typename S::value_type; });
+concept Stringable = requires { cxx::String(S()); };
 
-class JSON;
-struct JSONProp;
-
-class JSONBase : public RefCounted<JSONBase> {
-public:
-    virtual ~JSONBase() = default;
-    virtual void write(std::ostream& os) const = 0;
+/** A map with string keys */
+template <typename M>
+concept ObjectConvertible = requires {
+    Stringable<typename M::key_type>;
+    typename M::mapped_type;
 };
 
-class JSONNull final : public JSONBase {
-public:
-    void write(std::ostream& os) const override { os << "null"; }
+/** Something iterable, but neither a map nor a string */
+template <typename S>
+concept JSONArrayConvertible = (!ObjectConvertible<S>) && (!std::is_same_v<typename S::value_type, char>) && requires {
+    typename S::value_type;
 };
 
-class JSONBool final : public JSONBase {
-    bool val_;
+//     // Can be applied to views to automagically convert JSON-able things to JSON
+//     constexpr static auto transform = std::views::transform([](auto&& val) { return JSON(val);
+//     });
 
-public:
-    void write(std::ostream& os) const override { os << (val_ ? "true" : "false"); }
-    JSONBool(bool val) : val_(val) {}
-};
+struct JSON final : RefCounted<JSON> {
+    using Array = std::vector<Ref<JSON>>;
 
-class JSONNumber final : public JSONBase {
-    double val_;
+    struct ObjectProp final {
+        cxx::String key;
+        Ref<JSON> val;
+    };
 
-public:
-    void write(std::ostream& os) const override { os << val_; }
-    JSONNumber(double val) : val_(val) {}
-};
+    using Object = std::vector<ObjectProp>;
 
-class JSONString final : public JSONBase {
-    cxx::String val_ {};
+    std::variant<nullptr_t, bool, double, cxx::String, Array, Object> val_;
 
-public:
-    JSONString(Stringable auto val) : val_ {std::move(val)} {}
-    void write(std::ostream& os) const override { os << '"' << val_ /*TODO*/ << '"'; }
-    operator cxx::String() const { return val_; }
-};
+    ~JSON() = default;
+    JSON() = default;
 
-class JSON final {
-    Ref<JSONBase> json_;
+    JSON(nullptr_t) : val_(nullptr) {}
+    JSON(Bool auto val) : val_(val) {}
+    JSON(double val) : val_(val) {}
+    JSON(Stringable auto val) : val_(val) {}
 
-public:
-    void write(std::ostream& os) const { json_->write(os); }
-
-    JSON(JSON const& rhs) = default;
-    JSON& operator=(JSON const& rhs) = default;
-
-    // JSONNull (produced by default-construction)
-    JSON() : JSON(nullptr) {}
-    JSON(std::nullptr_t) : json_(make<JSONNull>()) {}
-
-    // JSONBool (has to be literally a `bool`, not something `operator bool`-able)
-    template <typename T>
-        requires std::same_as<T, bool> JSON(T val) : json_(make<JSONBool>(val)) {}
-
-    // JSONNumber: anything convertible to a number, except `bool`s
-    template <typename T>
-        requires(!std::same_as<T, bool>) && (std::is_integral_v<T> || std::is_floating_point_v<T>)
-    JSON(T val) : json_(make<JSONNumber>(val)) {}
-
-    // JSONString: anything that cxx::String ctors accept
-    JSON(cxx::String val) : json_(make<JSONString>(val)) {}
-
-    // JSONArray: any sequence (anything with [c]begin, [c]end), range, or view (including
-    // `Generator`s), with several exclusions; see `SequenceAny`.
-    JSON(SequenceAny auto const& seq);
-
-    // JSONObject: accepts something that can generate properties (key-value pairs)
-    JSON(CanGenJSONProps auto const& obj);
-
-    // JSONObject: accept something resembling a `map` or similar container, with `Stringable`
-    // keys. See: https://en.cppreference.com/w/cpp/named_req/AssociativeContainer
-    JSON(AssocStringToAny auto const& map);
-
-    // Can be applied to views to automagically convert JSON-able things to JSON
-    constexpr static auto transform = std::views::transform([](auto&& val) { return JSON(val); });
-};
-static_assert(std::semiregular<JSON>);
-
-template <typename T>
-concept JSONable = std::semiregular<T> && requires(T val) { JSON(val); };
-
-class JSONArray final : public JSONBase {
-    Generator<JSON> genItems;
-
-public:
-    void write(std::ostream& os) const override;
-
-    static Generator<JSON> asGenerator(auto it, auto end) {
-        for (; it != end; ++it) { co_yield *it; }
+    JSON(JSONArrayConvertible auto val) : val_(Array()) {
+        auto arr = Array();
+        for (auto item : val) { arr.push_back(cxx::make<JSON>(item)); }
+        val_ = std::move(arr);
     }
 
-    template <typename G>
-        requires Generates<G, JSON> JSONArray(G gen) : genItems(gen) {}
-
-    template <typename G>
-        requires GeneratesAny<G> && (!Generates<G, JSON>)
-    JSONArray(G gen) : JSONArray(gen | JSON::transform) {}
-
-    template <typename S>
-        requires SequenceAny<S> && (!GeneratesAny<S>)
-    JSONArray(S const& seq) : JSONArray(asGenerator(seq.begin(), seq.end())) {}
-};
-
-struct JSONProp final {
-    JSON name_;
-    JSON val_;
-
-    // Ensure this class is default-conclassible
-    JSONProp() : name_(""), val_(JSONString("")) {}
-
-    JSONProp(JSONString name, JSON val) : name_(std::move(name)), val_(std::move(val)) {}
-    JSONProp(cxx::String name, JSON val) : name_(JSONString(name)), val_(std::move(val)) {}
-    JSONProp(std::string name, JSON val) : name_(cxx::String(name)), val_(std::move(val)) {}
-    JSONProp(char const* name, JSON val) : name_(cxx::String(name)), val_(std::move(val)) {}
-};
-
-class JSONObject final : public JSONBase {
-    cxx::Generator<JSONProp> genJSONProps;
-
-    static cxx::Generator<JSONProp> genJSONPropsFor(AssocStringToAny auto const& map) {
-        for (auto const& entry : map) { co_yield {{entry.first}, JSON(entry.second)}; }
+    JSON(cxx::Generator<ObjectProp> gen) : val_(Object()) {
+        auto obj = Object();
+        for (auto prop : gen) { obj.push_back(prop); }
+        val_ = std::move(obj);
     }
 
-public:
-    void write(std::ostream& os) const override;
+    JSON(ObjectConvertible auto map) : val_(Object()) {
+        auto obj = Object();
+        for (auto [key, val] : map) { obj.push_back({key, cxx::make<JSON>(val)}); }
+        val_ = std::move(obj);
+    }
 
-    JSONObject(CanGenJSONProps auto const& obj) : genJSONProps(obj.genJSONProps()) {};
-
-    JSONObject(AssocStringToAny auto const& map) : genJSONProps(genJSONPropsFor(map)) {};
+    std::ostream& write(std::ostream& os) const;
 };
 
-JSON::JSON(SequenceAny auto const& seq) : json_(make<JSONArray>(seq)) {}
+struct JSONWriter {
+    std::ostream& os;
 
-JSON::JSON(CanGenJSONProps auto const& obj) : json_(make<JSONObject>(obj)) {}
-JSON::JSON(AssocStringToAny auto const& obj) : json_(make<JSONObject>(obj)) {}
+    void operator()(nullptr_t) { os << "null"; }
+    void operator()(bool val) { os << (val ? "true" : "false"); }
+    void operator()(double val) { os << val; }
+    void operator()(cxx::String val) { os << '"' << val << '"'; }
 
-inline void JSONArray::write(std::ostream& os) const {
-    os << '[';
-    std::string sep = "";
-    for (JSON item : genItems) {
-        os << sep;
-        sep = ",";
-        item.write(os);
+    void operator()(JSON::Array const& val) {
+        char sep = '[';
+        for (auto item : val) {
+            os << sep;
+            item->write(os);
+            sep = ',';
+        }
+        os << ']';
     }
-    os << ']';
-}
 
-inline void JSONObject::write(std::ostream& os) const {
-    cxx::String sep = "{";
-    for (auto prop : genJSONProps) {
-        os << sep;
-        sep = ",";
-        prop.name_.write(os);
-        os << ':';
-        prop.val_.write(os);
+    void operator()(JSON::Object const& val) {
+        char sep = '{';
+        for (auto item : val) {
+            os << sep;
+            auto key = JSON(item.key);  // convert to a JSON string, print it
+            key.write(os);
+            os << ':';
+            auto val = item.val;  // already a Ref<JSON>
+            val->write(os);
+            sep = ',';
+        }
+        os << '}';
     }
-    os << '}';
+};
+
+std::ostream& JSON::write(std::ostream& os) const {
+    std::visit(JSONWriter {os}, val_);
+    return os;
 }
 
 }  // namespace cxx

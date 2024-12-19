@@ -238,10 +238,38 @@ public:
         return {chars, 0, total};
     }
 
+    constexpr String operator+(char c) const { return this->operator+(cxx::String(c)); }
+
+    constexpr String& operator+=(String rhs) { return this->operator=(this->operator+(rhs)); }
+
     // `String` is not yet complete, so use a placeholder S.
     // This will be instantiated out-of-line below.
     template <typename S = String>
     Generator<S> split(char sep);
+
+    struct Iterator final {
+        using difference_type = long long;
+        char const* ptr_ {nullptr};
+        Iterator(char const* ptr) : ptr_(ptr) {}
+        char operator*() const { return *ptr_; }
+        bool operator==(Iterator const& rhs) const { return ptr_ == rhs.ptr_; }
+        Iterator& operator++() {
+            ++ptr_;
+            return *this;
+        }
+        Iterator& operator++(int) {
+            ++ptr_;
+            return *this;
+        }
+        long long operator-(Iterator const& rhs) const { return ptr_ - rhs.ptr_; }
+    };
+
+    Iterator begin() { return {data()}; }
+    Iterator begin() const { return {data()}; }
+    Iterator cbegin() const { return {data()}; }
+    Iterator end() { return {data() + size()}; }
+    Iterator end() const { return {data() + size()}; }
+    Iterator cend() const { return {data() + size()}; }
 };
 static_assert(std::regular<String>);
 static_assert(sizeof(String) == 24);
