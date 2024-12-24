@@ -17,32 +17,34 @@ template <typename T>
 class Ref;
 
 template <typename T>
-struct RefCountBlock {
+struct RefControl final {
+    // clang-format off
+    /**
+     * This class would only be instantiated on a concrete (non-abstract)
+     * type `T`.  No creation of `RefControl<T>` would occur when T is an
+     * abstract type.  However this template will get instantiated regardless,
+     * and still needs to compile properly.  The default destructor created for
+     * `RefControl<Abstract>` would be invalid, so we replace the abstract type
+     * with some dummy (instantiable even if trivial) type.
+     */
+    constexpr static bool hasObject = !std::is_abstract_v<T>;
+
+    template <bool B> struct ObjTypeSelector { using type = int; };
+    template <> struct ObjTypeSelector<true> { using type = T; };
+    using TT = typename ObjTypeSelector<hasObject>::type;
+
     std::atomic_int64_t mutable refs_ {0};
-    union {
-        char dummyObject {};  // to prevent `obj_` default-init
-        T obj_;
-    };
 
-    RefCountBlock() {}
-    ~RefCountBlock() { obj_.~T(); }
-};
-
-template <typename T>
-struct RefControl final : RefCountBlock<T> {
-    inline RefControl* retain() {
-        ++this->refs_;
-        return this;
-    }
-
-    inline void release() {
-        if (--this->refs_ == -1) { delete this; }
-    }
+    /** Either a concrete `T` instance, or some substitute type. */
+    TT obj_;
 
     template <typename... A>
-    RefControl(A&&... args) {
-        new (&this->obj_) T(args...);
-    }
+    RefControl(A&&... args) : obj_(TT(args...)) {}
+    ~RefControl() = default;
+    T* obj() { return (T*) &obj_; }
+    RefControl* retain() { ++this->refs_; return this; }
+    void release() { if (--this->refs_ == -1) { delete this; } }
+    // clang-format on
 };
 
 }  // namespace cxx::detail
@@ -55,7 +57,7 @@ struct Ref final {
 
     struct NullRef final : Exception {
         template <typename U>
-        static U* check(U* ptr) {
+        constexpr static U* check(U* ptr) {
             if (!ptr) { throw NullRef(); }
             return ptr;
         }
@@ -83,9 +85,9 @@ struct Ref final {
         return ret;
     }
 
-    constexpr T* get(this auto self) noexcept(true) {
+    constexpr T* get(this auto& self) noexcept(true) {
         if (!self.rc_) { return nullptr; }
-        return (T*) &self.rc_->obj_;
+        return self.rc_->obj();
     }
 
     constexpr T* operator->(this auto self) noexcept(true) { return NullRef::check(self.get()); }
