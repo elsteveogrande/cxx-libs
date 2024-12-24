@@ -13,108 +13,92 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx::detail {
 
-class RefCountedBase {
-private:
-    std::atomic_int64_t mutable rc_;
+template <typename T>
+class Ref;
 
-public:
-    virtual ~RefCountedBase() = default;
-    inline void inc() const { ++rc_; }
-    inline bool dec() const { return --rc_ == -1; }
-    int64_t count() const { return rc_; }
+template <typename T>
+struct RefCountBlock {
+    std::atomic_int64_t mutable refs_ {0};
+    union {
+        char dummyObject {};  // to prevent `obj_` default-init
+        T obj_;
+    };
+
+    RefCountBlock() {}
+    ~RefCountBlock() { obj_.~T(); }
+};
+
+template <typename T>
+struct RefControl final : RefCountBlock<T> {
+    inline RefControl* retain() {
+        ++this->refs_;
+        return this;
+    }
+
+    inline void release() {
+        if (--this->refs_ == -1) { delete this; }
+    }
+
+    template <typename... A>
+    RefControl(A&&... args) {
+        new (&this->obj_) T(args...);
+    }
 };
 
 }  // namespace cxx::detail
 
 namespace cxx {
 
-struct RefBase {};
-
 template <class T>
-class Ref final : public RefBase {
+struct Ref final {
+    detail::RefControl<T>* rc_ {nullptr};
 
-protected:
-    detail::RefCountedBase const* obj_ {nullptr};
+    struct NullRef final : Exception {
+        template <typename U>
+        static U* check(U* ptr) {
+            if (!ptr) { throw NullRef(); }
+            return ptr;
+        }
+    };
 
-public:
-    struct NullRef final : Exception {};
-
-    constexpr void clear() noexcept(true) {
-        if (!obj_) { return; }
-        if (obj_->dec()) { delete obj_; }
-        obj_ = nullptr;
+    constexpr ~Ref() noexcept(true) {
+        if (rc_) { rc_->release(); }
+        rc_ = nullptr;
     }
-
-    constexpr ~Ref() noexcept(true) { clear(); }
 
     constexpr Ref() = default;
 
-    constexpr Ref(T* obj) noexcept(true) : obj_(obj) {
-        // obj's `rc` is zero-initialized, which indicates
-        // a reference count of 1; don't increment it.
-    }
+    constexpr Ref(Ref const& rhs) noexcept(true) : rc_(rhs.rc_->retain()) {}
+    constexpr Ref(Ref&& rhs) noexcept(true) : rc_(rhs.rc_) { rhs.rc_ = nullptr; }
 
-    constexpr Ref(Ref const& rhs) noexcept(true) : obj_(rhs.get()) {
-        if (obj_) { obj_->inc(); }
-    }
-
-    constexpr Ref& operator=(Ref const& rhs) noexcept(true) {
-        clear();
-        new (this) Ref(rhs);
-        return *this;
-    }
-
-    constexpr Ref(Ref&& rhs) noexcept(true) : obj_(rhs.get()) {
-        // Steal this obj pointer, clear it in rhs.
-        // Avoids the needs to increment / decrement refcount.
-        rhs.obj_ = nullptr;
-    }
-
-    constexpr Ref& operator=(Ref&& rhs) noexcept(true) {
-        // Steal this obj pointer, clear it in rhs.
-        // Avoids the needs to increment / decrement refcount.
-        this->obj_ = rhs.obj_;
-        rhs.obj_ = nullptr;
-        return *this;
-    }
+    constexpr Ref& operator=(Ref const& rhs) noexcept(true) { return *(new (this) Ref(rhs)); }
+    constexpr Ref& operator=(Ref&& rhs) noexcept(true) { return *(new (this) Ref(std::move(rhs))); }
 
     template <typename U>
-        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>)
-    constexpr operator Ref<U>() {
-        U* obj = (U*) obj_;
-        if (obj) { obj->inc(); }
-        return Ref<U>(obj);
+        requires(!std::is_same_v<std::remove_cv_t<U>, std::remove_cv_t<T>>) &&
+                (std::is_assignable_v<std::remove_cv_t<U*&>, std::remove_cv_t<T*>>)
+    operator Ref<U>() {
+        Ref<U> ret;
+        ret.rc_ = (detail::RefControl<U>*) (this->rc_->retain());
+        return ret;
     }
 
-    constexpr T* get() noexcept(true) { return (T*) obj_; }
-    constexpr T const* get() const noexcept(true) { return (T const*) obj_; }
-
-    constexpr T* operator->() noexcept(true) { return get(); }
-    constexpr T const* operator->() const noexcept(true) { return get(); }
-
-    constexpr T& operator*() {
-        if (!obj_) { throw NullRef(); }
-        return *obj_;
+    constexpr T* get(this auto self) noexcept(true) {
+        if (!self.rc_) { return nullptr; }
+        return (T*) &self.rc_->obj_;
     }
 
-    constexpr T const& operator*() const {
-        if (!obj_) { throw NullRef(); }
-        return *obj_;
-    }
+    constexpr T* operator->(this auto self) noexcept(true) { return NullRef::check(self.get()); }
+    constexpr T& operator*(this auto self) { return *(self.operator->()); }
 };
 static_assert(std::semiregular<Ref<int>>);
 static_assert(sizeof(Ref<int>) == sizeof(uintptr_t));
 
-template <typename T>
-class RefCounted : public detail::RefCountedBase {
-protected:
-    virtual ~RefCounted() = default;
-};
-
 template <typename U, typename... A>
-static Ref<U> make(A&&... args) {
-    U* ptr = new U(args...);
-    return Ref<U>(ptr);
+constexpr Ref<U> ref(A&&... args) {
+    Ref<U> ret;
+    ret.rc_ = new detail::RefControl<U>(args...);
+    return ret;
 }
 
 }  // namespace cxx
