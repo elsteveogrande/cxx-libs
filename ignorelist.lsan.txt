@@ -1,2 +1,3 @@
 leak:_fetchInitializingClassList
 leak:std::__1::basic_ostream
+leak:__cxa_throw

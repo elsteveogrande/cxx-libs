@@ -31,7 +31,7 @@ BreakConstructorInitializers: BeforeComma
 BinPackArguments: false
 BinPackParameters: false
 AllowAllConstructorInitializersOnNextLine: false
-AllowShortBlocksOnASingleLine: true
+AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortCompoundRequirementOnASingleLine: true
 BreakBeforeConceptDeclarations: Always
@@ -42,6 +42,7 @@ AlignConsecutiveShortCaseStatements:
   AcrossComments: true
   AlignCaseColons: false
 AllowShortLoopsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
 
 SpaceAfterCStyleCast: true
 PackConstructorInitializers: CurrentLine
