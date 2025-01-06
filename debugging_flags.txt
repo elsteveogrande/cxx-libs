@@ -1,6 +1,5 @@
 -UNDEBUG
--O1
+-O0
 -g
 -fno-inline
 -fno-omit-frame-pointer
--mno-omit-leaf-frame-pointer

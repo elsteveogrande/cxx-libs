@@ -1,7 +1,7 @@
 -xc++
 -std=gnu++23
 -stdlib=libc++
--g1
+-g
 -Og
 -Wall
 -Wextra
@@ -15,7 +15,6 @@
 -fexceptions
 -frtti
 -fno-omit-frame-pointer
--momit-leaf-frame-pointer
 -march=native
 -UNDEBUG
 -isystem

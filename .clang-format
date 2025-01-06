@@ -17,6 +17,8 @@ IndentWidth: 4
 MaxEmptyLinesToKeep: 1
 InsertNewlineAtEOF: true
 UseTab: Never
+
+AlignAfterOpenBracket: Align
 BraceWrapping:
   AfterClass: false
 AllowShortFunctionsOnASingleLine: true

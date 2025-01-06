@@ -92,13 +92,14 @@ class Makefile:
             if suf == "msan":
                 build += " -fsanitize-ignorelist=ignorelist.msan.txt"
                 build += " -fsanitize-memory-track-origins"
+                build += " -Wl,-no-pie"
             return Target(name=test_prog, deps=deps, build=build)
 
         def run_cmd(test_prog: str, suf: str) -> str:
             cmd = f"{test_prog}.{suf}"
             if suf == "asan":
                 cmd = f"ASAN_OPTIONS=detect_leaks=1 {cmd}"
-                cmd = f"LSAN_OPTIONS=suppressions=ignorelist.lsan.txt {cmd}"
+                cmd = f"LSAN_OPTIONS=suppressions=ignorelist.lsan.txt,report_objects=1,max_leaks=3,print_suppressions=0 {cmd}"
             return cmd
 
         for header in headers:
