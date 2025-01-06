@@ -1,11 +1,12 @@
-// Only include the header being tested; this single standalone include
-// should work without needing other headers.
-#include "cxx/StackTrace.h"
-
 #include <cassert>
+#include <cxx/StackTrace.h>
+#include <iostream>
 
-int main() {
+int main(int, char** argv) {
+    std::cout << std::endl << argv[0] << std::endl;
+    cxx::StackResolver sr;
     cxx::StackTrace s;
-    // assert(std::string(s.frame->filename) == "test/StackTraceTests.cc");
+    s.resolve(sr);
+    s.dump(std::cout);
     return 0;
 }

@@ -2,71 +2,140 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
+#include "decl/_DWARF.h"
+#include "decl/_Exception.h"
+#include "decl/_ObjectFile.h"
+#include "decl/_SourceLoc.h"
+#include "decl/_StackFrame.h"
+#include "decl/_StackResolver.h"
+#include "decl/_StackTrace.h"
+
+#include <cerrno>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cxxabi.h>
+#include <dlfcn.h>
 #include <execinfo.h>
-#include <iomanip>
-#include <iostream>
+#include <fcntl.h>
+#include <map>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <sys/fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <utility>
+#include <vector>
 
 namespace cxx {
 
-struct StackFrame final {
-    void const* address;
-    char symbol[256];
-    char filename[128];
-    int32_t line;
-    std::shared_ptr<StackFrame> next {};
+void StackResolver::findBinaries(std::string const& thisProg) {
+    // minor TODO: looks like `binaries` gets some dupes.
 
-    void dump() const noexcept;
-};
+    BinarySP bin;
 
-struct StackTrace final {
-    static unsigned const CHOP = 2;
-    std::shared_ptr<StackFrame> frame {};
-    [[gnu::noinline]] StackTrace();
-    void dump() const noexcept;
-};
+    // If the program itself can be opened, add that
+    bin = Binary::open(thisProg);
+    if (bin) { binaries.push_back(bin); }
 
-void StackFrame::dump() const noexcept {
-    std::stringstream loc;
-    loc << filename << ':' << line;
-    std::cerr << "... 0x" << std::setw(16) << std::setfill('0') << std::hex << uint64_t(address)
-              << ' ' << std::setw(32) << std::setfill(' ') << loc.str() << ' ' << std::setw(0)
-              << std::setw(0) << symbol << std::endl;
+    // Look for the debugging data under `dSYM` (OSX).
+    // E.g.: for the program:
+    //   [...]/build/StackTraceTests.asan
+    // we look for the file:
+    //   [...]/build/StackTraceTests.asan.dSYM/Contents/Resources/DWARF/StackTraceTests.asan
+    size_t slash = 0;
+    while (true) {
+        auto nextSlash = thisProg.find('/', slash + 1);
+        if (nextSlash == std::string::npos) { break; }
+        slash = nextSlash;
+    }
+    auto progName = thisProg.substr(slash + 1);
+    std::stringstream dwarfName;
+    dwarfName << thisProg << ".dSYM/Contents/Resources/DWARF/" << progName;
+    bin = Binary::open(dwarfName.str());
+    if (bin) { binaries.push_back(bin); }
 }
 
-[[gnu::noinline]] StackTrace::StackTrace() {
-    void* frameAddr = __builtin_frame_address(0);
-    auto chop = CHOP;
-    std::shared_ptr<StackFrame> prev {nullptr};
-    while (frameAddr) {
-        if (chop--) { continue; }
-        void** ptr = (void**) frameAddr;
-        void* ip = ptr[1];
-        auto frame = std::make_shared<StackFrame>();
-        frame->address = ip;
-        frame->symbol[0] = 0;
-        frame->filename[0] = 0;
-        frame->line = 0;
-        if (prev) {
-            prev->next = frame;
-        } else {
-            this->frame = frame;
+void getLocations(std::map<uintptr_t, SourceLoc>* out, Binary& binary) {
+    SectionSP debugLine;
+    SectionSP debugLineStr;
+    for (auto section : binary.sections()) {
+        if (section->name() == "__debug_line") {
+            debugLine = section;
+        } else if (section->name() == "__debug_line_str") {
+            debugLineStr = section;
         }
-        prev = frame;
+    }
+    if (debugLine && debugLineStr) { DWARF::evalLineProg(out, debugLine, debugLineStr); }
+}
 
-        frameAddr = ptr[0];
+SourceLoc StackResolver::findLocation(uintptr_t addr, Binary& binary) {
+    getLocations(&locs, binary);
+    if (locs.size()) {
+        auto it = locs.begin();
+        if (it->second.virtualAddr <= addr) {
+            it = locs.upper_bound(addr);
+            --it;
+            if (addr >= it->second.virtualAddr) { return it->second; }
+        }
+    }
+    return {};
+}
+
+SourceLoc StackResolver::findLocation(uintptr_t addr) {
+    for (auto& bin : binaries) {
+        auto ret = findLocation(addr, *bin);
+        if (ret) { return ret; }
+    }
+    return {};
+}
+
+void StackFrame::resolve(StackResolver& sr) const {
+    // Use basic DL calls available in [g]libc.
+    // This gets us the symbol and binary file (this program or shared lib).
+    if (filename.empty() || symbol.empty()) {
+        Dl_info info;
+        dladdr(address, &info);
+        if (dlerror()) { return; }
+        if (info.dli_fname) { filename = info.dli_fname; }
+        if (info.dli_sname) {
+            symbol = info.dli_sname;
+            demangled = demangle(symbol.data());
+        }
+    }
+
+    // Try to locate this binary and/or companion DWARF files
+    // (.dwo files for separated debug info, or `.dSYM/` dirs on OSX).
+    sr.findBinaries(filename);
+
+    // Search `binaries` for DWARF entries indication source locations
+    this->loc = sr.findLocation((uintptr_t) address);
+}
+
+StackTrace::StackTrace() {
+    void* frameAddr = __builtin_frame_address(0);     // Starting at current frame,
+    auto* nextFramePtr = &this->frame;                // build linked list of frames.
+    while (frameAddr) {                               // Until we hit the end...:
+        void** ptr = (void**) frameAddr;              // start poking around in the stack
+        auto ipNext = ((uintptr_t) (ptr[1]));         // find IP of instruction after call
+        if (!ipNext) { break; }                       // (if no return address, we're at end).
+        void* ip = (void*) (ipNext - 1);              // Back up to last byte of prev instruction
+        auto frame = std::make_shared<StackFrame>();  // create a new frame
+        frame->address = ip;                          // set address to (near) the calling insn
+        *nextFramePtr = frame;                        // append frame to the list
+        nextFramePtr = &frame->next;                  // ready to append next frame (if any)
+        frameAddr = ptr[0];                           // continue walking the stack
     }
 }
 
-void StackTrace::dump() const noexcept {
-    auto f = this->frame;
-    while (f) {
-        f->dump();
-        f = f->next;
-    }
-    std::cerr.flush();
+void DWARF::evalLineProg(std::map<uintptr_t, SourceLoc>*, SectionSP, SectionSP) {
+    // TODO
 }
 
 }  // namespace cxx
+
+#include <cxx/Exception.h>
+#include <cxx/ObjectFile.h>
