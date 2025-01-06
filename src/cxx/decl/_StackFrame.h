@@ -13,6 +13,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <dlfcn.h>
 #include <execinfo.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -27,24 +28,21 @@ struct StackFrame final {
     std::shared_ptr<StackFrame> next {};
     // All these are mutable and only filled in when `resolve` is called,
     // so `resolve` can be used within a `catch (cxx::Exception const& ...)`
-    SourceLoc mutable loc {};
     std::string mutable symbol {};
     std::string mutable demangled {};
     std::string mutable filename {};
-    std::string mutable sourceFile {};
-    unsigned mutable line {0};
-    unsigned mutable col {0};
+    SourceLoc mutable loc {};
 
     std::string sym() const { return (!demangled.empty() ? demangled : symbol); }
 
     std::string locStr() const {
         std::stringstream ret;
-        // std::string file = (sourceFile.empty() ? filename : sourceFile);
-        // std::string rel = std::filesystem::relative(file);
-        // if (rel[0] != '/' && rel[0] != '.') { rel = std::string("./") + rel; }
-        // ret << (rel.size() < file.size() ? rel : file);
-        // if (line) { ret << ':' << line; }
-        // if (col) { ret << ':' << col; }
+        std::string file = (loc.sourceFile.empty() ? filename : loc.sourceFile);
+        std::string rel = std::filesystem::relative(file);
+        if (rel[0] != '/' && rel[0] != '.') { rel = std::string("./") + rel; }
+        ret << (rel.size() < file.size() ? rel : file);
+        if (loc.line) { ret << ':' << loc.line; }
+        if (loc.col) { ret << ':' << loc.col; }
         return ret.str();
     }
 

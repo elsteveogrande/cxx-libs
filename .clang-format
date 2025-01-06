@@ -50,13 +50,13 @@ SpaceAfterCStyleCast: true
 PackConstructorInitializers: CurrentLine
 RequiresClausePosition: WithFollowing
 
-PenaltyBreakBeforeFirstCallParameter: 200
+PenaltyBreakBeforeFirstCallParameter: 600
 PenaltyBreakComment:                  100
 PenaltyBreakFirstLessLess:            300
 PenaltyBreakOpenParenthesis:          200
 PenaltyBreakScopeResolution:          300
 PenaltyBreakString:                   100
-PenaltyBreakTemplateDeclaration:      200
+PenaltyBreakTemplateDeclaration:      500
 PenaltyExcessCharacter:               100
 PenaltyIndentedWhitespace:            400
-PenaltyReturnTypeOnItsOwnLine:        300
+PenaltyReturnTypeOnItsOwnLine:        500

@@ -5,23 +5,13 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "_StackFrame.h"
 #include "_StackResolver.h"
 
-#include <cerrno>
-#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <cxxabi.h>
-#include <dlfcn.h>
-#include <execinfo.h>
-#include <fcntl.h>
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <ostream>
 #include <string>
-#include <sys/fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
 
 namespace cxx {
 

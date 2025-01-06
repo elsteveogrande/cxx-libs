@@ -33,12 +33,13 @@ void dump(std::exception_ptr eptr) {
     } catch (std::exception const& _e) { e = &_e; }
 
     if (e) {
-        std::cerr << std::endl
-                  << "###################################" << std::endl
-                  << "Uncaught exception:" << std::endl
-                  << "type: " << typeid(*e).name() << std::endl
-                  << "what: " << e->what() << std::endl
-                  << "###################################" << std::endl;
+        std::cerr
+                << std::endl
+                << "###################################" << std::endl
+                << "Uncaught exception:" << std::endl
+                << "type: " << typeid(*e).name() << std::endl
+                << "what: " << e->what() << std::endl
+                << "###################################" << std::endl;
         auto const* ex = dynamic_cast<cxx::Exception const*>(e);
         if (ex) { ex->dump(); }
     }

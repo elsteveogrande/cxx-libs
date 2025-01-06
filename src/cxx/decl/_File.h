@@ -1,20 +1,15 @@
 #pragma once
-#include <memory>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "_Bytes.h"
+#include "_Cursor.h"
 
-#include <cerrno>
-#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <cxxabi.h>
-#include <dlfcn.h>
-#include <execinfo.h>
 #include <fcntl.h>
+#include <memory>
 #include <string>
 #include <sys/fcntl.h>
 #include <sys/mman.h>
@@ -23,9 +18,9 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 namespace cxx {
 
 struct File;
-using FileSP = std::shared_ptr<File>;
+using FileSP = std::shared_ptr<File const>;
 
-struct File : Bytes {
+struct File : Bytes, std::enable_shared_from_this<File> {
     std::string path_;
     int const fd_;
     size_t const size_;
@@ -36,8 +31,9 @@ struct File : Bytes {
         ::munmap((void*) mmap_, size_);
     }
 
-    uint8_t const* data() const override { return (uint8_t const*) mmap_; }
-    size_t size() const override { return size_; }
+    bool valid() const { return fd_ != -1; }
+
+    Cursor cur() const override;
 
     File(std::string path)
             : path_(path)
@@ -47,9 +43,11 @@ struct File : Bytes {
 
     static FileSP open(std::string path) {
         auto ret = std::make_shared<File>(path);
-        if (ret->size()) { return ret; }
+        if (ret->valid()) { return ret; }
         return {};
     }
 };
+
+Cursor File::cur() const { return {shared_from_this(), (uint8_t const*) mmap_, size_}; }
 
 }  // namespace cxx
