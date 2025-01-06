@@ -14,10 +14,11 @@
 #include <vector>
 
 template <typename T>
-void expectJSONResult(cxx::String str, T expr) {
+void expectJSONResult(cxx::String str, T&& expr) {
     std::cerr << "expect: " << str << std::endl;
     std::stringstream ss;
-    cxx::JSON(expr).write(ss);
+    cxx::JSON j(std::forward<T>(expr));
+    j.write(ss);
     ss.flush();
     std::cerr << "actual: " << ss.str() << std::endl;
     assert(str == cxx::String(ss.str()));
@@ -44,6 +45,7 @@ int main() {
 
     expectJSONResult("\"hello world\"", "hello world");
 
+    expectJSONResult("[66]", std::array<int, 1> {66});
     expectJSONResult("[1,2,3]", std::array<int, 3> {1, 2, 3});
     expectJSONResult("[1,2,3]", std::vector<int> {1, 2, 3});
     expectJSONResult("[1,2,3]", std::list<int> {1, 2, 3});
@@ -71,7 +73,7 @@ int main() {
     auto const json = R"({"bools":[false,true],"nullable":null,"numberArray":[-1.5,2],"someObject":{"x":["y","z"]}})";
     expectJSONResult(json, JSONableStruct().genJSONProps());
 
-    // // Parsing JSON
+    // Parsing JSON
 
     // assert(cxx::JSON::parse("null") == cxx::JSON(nullptr));
 
