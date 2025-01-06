@@ -1,11 +1,8 @@
-// Only include the header being tested; this single standalone include
-// should work without needing other headers.
-#include "cxx/String.h"
-
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cxx/String.h>
 #include <iomanip>
 #include <ios>
 #include <iostream>

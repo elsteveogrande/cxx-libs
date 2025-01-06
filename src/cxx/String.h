@@ -2,7 +2,7 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "Generator.h"
+#include "decl/_Generator.h"
 
 #include <atomic>
 #include <cassert>
@@ -42,7 +42,8 @@ struct HeapString final {
     /** Reference count minus 1; when this drop below 0, delete this `HeapString`. */
     std::atomic_int64_t rc_;
 
-    /** First byte of character array (the rest of the allocated bytes are just past this one) */
+    /** First byte of character array (the rest of the allocated bytes are just past this
+     * one) */
     char data_;
 
     static HeapString* make(char const* src, size_t size) {
@@ -181,7 +182,8 @@ class String final {
 public:
     constexpr ~String() { clear(); }
 
-    /** Construct empty small string.  NB: this constructor zero-initializes this `String`. */
+    /** Construct empty small string.  NB: this constructor zero-initializes this
+     * `String`. */
     constexpr String() : String(detail::kEmpty, 0, 0) {}
 
     constexpr String(String const& rhs) { copyFrom(rhs); }
@@ -245,7 +247,7 @@ public:
     // `String` is not yet complete, so use a placeholder S.
     // This will be instantiated out-of-line below.
     template <typename S = String>
-    Generator<S> split(char sep);
+    Generator<S> split(char sep) noexcept;
 
     struct Iterator final {
         using difference_type = long long;
@@ -275,7 +277,7 @@ static_assert(std::regular<String>);
 static_assert(sizeof(String) == 24);
 
 template <>
-Generator<String> String::split(char sep) {
+Generator<String> String::split(char sep) noexcept {
     size_t const size = this->size();
     char const* data = this->data();
     size_t start = 0;  // current [initial] part starts here
