@@ -2,12 +2,13 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "_Ref.h"
+#include "ref/base.h"
 
 #include <cassert>
 #include <coroutine>
 #include <cstddef>
 #include <exception>
+#include <memory>
 #include <ranges>
 
 namespace cxx {
@@ -17,7 +18,7 @@ class Generator;
 
 template <typename T>
 struct Promise {
-    T val_ {};
+    std::unique_ptr<T> val_ {};
     std::exception_ptr exc_;
 
     ~Promise() noexcept = default;
@@ -28,8 +29,8 @@ struct Promise {
     void unhandled_exception() noexcept { exc_ = std::current_exception(); }
     Generator<T> get_return_object() noexcept { return {this}; }
 
-    std::suspend_always yield_value(T val) noexcept {
-        val_ = val;
+    std::suspend_always yield_value(T&& val) noexcept {
+        val_ = std::move(std::make_unique<T>(std::move(val)));
         return {};
     }
 };
@@ -40,7 +41,7 @@ struct Coro final {
     Handle handle;
     ~Coro() noexcept { handle.destroy(); }
     Coro(Promise<T>* promise) noexcept : handle(Handle::from_promise(*promise)) {}
-    virtual bool done() const noexcept { return handle.done(); }
+    virtual bool done() const noexcept { return (!handle) || handle.done(); }
 };
 
 template <typename T>
@@ -67,10 +68,10 @@ struct CoroIterator final : CoroIteratorBase<T> {
 
     virtual bool done() const noexcept { return coro_->done(); }
 
-    T operator*() const noexcept {
+    T& operator*() const noexcept {
         auto& p = coro_->handle.promise();
         if (p.exc_) { std::rethrow_exception(p.exc_); }
-        return p.val_;
+        return *p.val_;
     }
 
     CoroIterator<T>& operator++(int) noexcept { return this->operator++(); }

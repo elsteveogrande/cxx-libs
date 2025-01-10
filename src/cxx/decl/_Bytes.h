@@ -8,8 +8,11 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
+template <typename T>
+class Ref;
+
 struct Bytes;
-using BytesSP = std::shared_ptr<Bytes const>;
+using BytesRef = std::shared_ptr<Bytes const>;
 struct Cursor;
 struct File;
 

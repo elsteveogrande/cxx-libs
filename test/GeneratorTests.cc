@@ -73,11 +73,30 @@ void testGenTransform() {
     assert(it == end);
 }
 
+struct Foo {
+    unsigned x;
+    ~Foo() { printf("~Foo\n"); }
+};
+
+struct Bar {
+    cxx::Ref<Foo> f;
+};
+
+cxx::Generator<Bar> genBars() {
+    co_yield {cxx::Ref<Foo>::make(111)};
+    co_yield {cxx::Ref<Foo>::make(222)};
+}
+
+void testLeaksViaYield() {
+    for (auto b : genBars()) { (void) b; }
+}
+
 }  // namespace
 
 int main() {
     testCreateGenAndIter();
     testRangeConformance();
     testGenTransform();
+    testLeaksViaYield();
     return 0;
 }

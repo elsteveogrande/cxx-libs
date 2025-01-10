@@ -45,9 +45,10 @@ struct StackTrace final {
         // If first entry is for `cxx::StackTrace::StackTrace()`, discard
         if (it != end && (*it)->symbol == "_ZN3cxx10StackTraceC1Ev") { ++it; }
         auto begin = it;
-        int width = 30;  // minimum width; arbitrary
+        int width = 15;  // minimum width; arbitrary
         auto adjust = [&width] (int w) { width = (w > width) ? w : width; };
         while (it != end) { adjust((*it)->locStr().size()); ++it; }  // find max width for filename
+        if (width > 40) { width = 40; }
         it = begin;
         while (it != end) {
             auto& sf = **it;

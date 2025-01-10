@@ -16,7 +16,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <exception>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>

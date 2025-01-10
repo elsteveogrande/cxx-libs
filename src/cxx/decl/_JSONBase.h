@@ -3,13 +3,13 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "_LinkedList.h"
+#include "ref/base.h"
 
 #include <cassert>
 #include <cstddef>
 #include <cxx/Generator.h>
 #include <cxx/String.h>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -57,10 +57,10 @@ struct Repr {
 };
 
 struct JSON final {
-    std::shared_ptr<Repr> repr_;
+    Ref<Repr> repr_;
 
     template <typename R>
-    explicit JSON(std::shared_ptr<R> repr) : repr_(std::move(repr)) {}
+    explicit JSON(Ref<R> repr) : repr_(std::move(repr)) {}
 
     JSON() : JSON(nullptr) {}
     ~JSON() noexcept = default;

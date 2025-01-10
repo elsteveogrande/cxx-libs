@@ -10,7 +10,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <cxx/Generator.h>
 #include <cxx/String.h>
 #include <iostream>
-#include <memory>
 
 namespace cxx {
 

@@ -14,7 +14,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <execinfo.h>
 #include <fcntl.h>
 #include <filesystem>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <sys/fcntl.h>

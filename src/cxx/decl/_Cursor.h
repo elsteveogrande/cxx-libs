@@ -17,7 +17,7 @@ namespace cxx {
 /** A read-only reader for a `Bytes` object, providing (some) binary stream-like functions. */
 struct Cursor final {
     // clang-format off
-    BytesSP owner_;                 // owns the actual bytes; we retain a ref to keep it alive
+    BytesRef owner_;                 // owns the actual bytes; we retain a ref to keep it alive
     uint8_t const* const base_ {};  // start of accessible window
     size_t const size_ {};          // max size of this cursor's window; last byte is at (base + size - 1)
     size_t offset_ {0};             // initially zero, adjusted during reads
@@ -26,7 +26,7 @@ struct Cursor final {
 
     Cursor() = default;
 
-    Cursor(BytesSP owner, uint8_t const* base, size_t size)
+    Cursor(BytesRef owner, uint8_t const* base, size_t size)
         : owner_(std::move(owner)), base_(base), size_(size) {}
 
     Cursor(Cursor const& rhs)

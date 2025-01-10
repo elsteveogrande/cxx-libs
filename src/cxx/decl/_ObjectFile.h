@@ -7,7 +7,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "_File.h"
 #include "_SourceLoc.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

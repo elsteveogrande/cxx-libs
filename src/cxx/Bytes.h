@@ -7,7 +7,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 namespace cxx {
 
 Cursor ByteBuffer::cur() const {
-    BytesSP self = shared_from_this();
+    BytesRef self = shared_from_this();
     return {shared_from_this(), data_, size_};
 }
 

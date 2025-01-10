@@ -3,7 +3,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "../_Generator.h"
-#include "../_Ref.h"
+#include "../ref/base.h"
 
 #include <cassert>
 #include <concepts>

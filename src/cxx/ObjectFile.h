@@ -11,37 +11,9 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include <cstdlib>
 #include <cxxabi.h>
-#include <memory>
 #include <string>
 
 namespace cxx {
-
-/*
-    std::shared_ptr<Section> parseSection(Cursor cur, SegmentSP seg) {
-        auto name = cur.fixedStr(16);     // @ 0
-        auto segName = cur.fixedStr(16);  // @ 16 (ignored)
-        auto vmaddr = cur.u64();          // @ 32
-        auto vmsize = cur.u64();          // @ 40
-        auto binaryOffset = cur.u32();    // @ 48
-        cur += 28;                        // @ 52, skip the rest of this 80-byte record
-        return std::make_shared<Section>(Section {.segment = seg,
-                                                  .binaryOffset = binaryOffset,
-                                                  .name = name,
-                                                  .vmaddr = vmaddr,
-                                                  .vmsize = vmsize});
-    }
-
-    void parseSections(this BinarySP self, Segment& segment, size_t nsects) {
-        //
-        https://github.com/aidansteele/osx-abi-macho-file-format-reference?tab=readme-ov-file#section_64
-        // Start reading at the first section, just after the load-segment command.
-        Cursor cur(self, segment.binaryOffset + 72);
-        while (nsects--) {
-            auto section = self->parseSection(cur, segment);
-            segment.sections.push_back(section);
-        }
-    }
-*/
 
 BinarySP Binary::open(std::string const& path, uintptr_t vmaSlide) {
     auto file = File::open(path);

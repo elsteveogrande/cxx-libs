@@ -11,3 +11,5 @@ class String;
 #include "decl/string/concat.h"
 #include "decl/string/ctor.h"
 #include "decl/string/split.h"
+
+#include <cxx/Ref.h>
