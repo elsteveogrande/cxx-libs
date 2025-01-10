@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <string>
 #include <utility>
 
 using cxx::String;
@@ -220,6 +221,29 @@ int main() {
         assert('o' == (s1 + s2)[1]);
         assert('o' == (s1 + s2)[2]);
         assert('s' == (s1 + s2)[3]);
+    });
+
+    Test("compare", [] {
+        String f = "foo";
+        assert(f < "z");
+        assert(f < String("z"));
+        assert(f < std::string("z"));
+        assert(f != "z");
+        assert(f != String("z"));
+        assert(f != std::string("z"));
+
+        String b = "bar";
+        assert(b < f);
+        assert(b < String(f));
+        assert(b < std::string(f));
+        assert(b != f);
+        assert(b != String(f));
+        assert(b != std::string(f));
+
+        String g = "foo";
+        assert(g == f);
+        assert(g == String(f));
+        assert(g == std::string(f));
     });
 
     Test("split", [] {

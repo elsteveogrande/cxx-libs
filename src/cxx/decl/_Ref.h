@@ -1,4 +1,7 @@
 #pragma once
+#include <cxx/decl/_StackResolver.h>
+#include <cxx/decl/_StackTrace.h>
+#include <iostream>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -44,31 +47,31 @@ struct RefControl final {
     RefControl& operator=(RefControl const& rhs) = delete;
 
     template <typename... A>
-    RefControl(A&&... args) noexcept : obj_ {args...} {}
+    RefControl(A&&... args) noexcept : obj_(std::forward<A>(args)...) {}
 
     T* obj() noexcept{ return reinterpret_cast<T*>(&obj_); }
     int64_t refs() const noexcept{ return refs_.load(std::memory_order_relaxed); }
 
     auto* retain(this auto& self) noexcept {
         ++self.refs_;
-        // printf("retain: this=%p refs=%d\n", &self, self.refs());
-        // StackResolver sr;
-        // StackTrace st;
+        printf("retain: this=%p refs=%lld\n", &self, self.refs());
+        StackResolver sr;
+        StackTrace st;
         // st.resolve(sr);
-        // st.dump(std::cerr);
+        st.dump(std::cerr);
         return &self;
     }
 
     void release(this auto& self) noexcept {
         if (!--self.refs_) {
             delete &self;
-            // printf("DELETE %p\n", &self);
+            printf("DELETE %p\n", &self);
         } else {
-            // printf("release: this=%p refs=%d\n", &self, self.refs()); }
-            // StackResolver sr;
-            // StackTrace st;
+            printf("release: this=%p refs=%lld\n", &self, self.refs());
+            StackResolver sr;
+            StackTrace st;
             // st.resolve(sr);
-            // st.dump(std::cerr);
+            st.dump(std::cerr);
         }
         // clang-format on
     };
@@ -141,10 +144,43 @@ struct Ref final {
 
     uint64_t refs() const noexcept { return rc_ ? rc_->refs() : 0; }
 
-    template <typename... A>
+    // clang-format off
+
+    /**
+     * Construct a `Ref` for a new object.
+     * This object is initialized given the args of type `A...`.
+     * Initial refcount is 0.
+     */
+    template <typename... A> requires(!std::is_array_v<T>)
     static Ref<T> make(A&&... args) noexcept {
-        return Ref(new detail::RefControl<T>(std::forward<A>(args)...));
+        // For this one object we can forward args to RefControl
+        // which in turn forwards those to T's constructor.
+        return {new detail::RefControl<T>(std::forward<A>(args)...)};
     }
+
+    /**
+     * Construct a `Ref` for `T`, which is an array type `E[]`.
+     * Each element is initialized given the args of type `A...`.
+     * Initial refcount is 0.
+     */
+    template <typename E=typename std::remove_extent_t<T>,
+              typename... A> requires(std::is_array_v<T>)
+    static Ref<T> make(size_t arraySize, A&&... args) noexcept {
+        // For this array we need to allocate a block of (arraySize * sizeof(E)) bytes
+        // (plus alignment etc.).  I couldn't get this to initialize the correct size
+        // region of memory without this ugly type-punning...
+        auto rcSize = sizeof(detail::RefControl<E>)     // space for RefControl with 1 element,
+                      + ((arraySize - 1) * sizeof(E));  // plus the remainining elements.
+        auto* rcBytes = new uint8_t[rcSize];            // Alloc opaque byte block
+        auto* rc = (detail::RefControl<T>*) rcBytes;    // Cast to the actual RC
+        rc->refs_ = 0;                                  // Initial refcount 0, as usual
+        E* arr = *rc->obj();                            // Address of first element
+        for (size_t i = 0; i < arraySize; i++) {
+            new (arr + i) E(std::forward(args)...);     // Initialize each element w/ args
+        }
+        return {rc};
+    }
+    // clang-format on
 };
 static_assert(std::semiregular<Ref<int>>);
 static_assert(sizeof(Ref<int>) == sizeof(uintptr_t));
