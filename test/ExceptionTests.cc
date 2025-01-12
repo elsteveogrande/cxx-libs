@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <string>
+
 using cxx::test::Test;
 int main(int, char**) { return cxx::test::run(); }
 
@@ -16,9 +17,5 @@ void func1() { func2(); }
 Test testSimpleThrowCatch([] {
     try {
         func1();
-    } catch (TestException const& e) {
-        assert(std::string("test") == e.what());
-        return 0;
-    }
-    return 1;
+    } catch (TestException const& e) { assert(std::string("test") == e.what()); }
 });

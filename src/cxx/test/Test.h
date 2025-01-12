@@ -29,7 +29,6 @@ struct Tests {
 
 struct Test {
     std::function<void()> func_;
-
     Test(std::function<void()> func) : func_(std::move(func)) {
         Tests::get().tests.push_back(this);
     }

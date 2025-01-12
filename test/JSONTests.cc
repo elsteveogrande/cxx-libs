@@ -7,24 +7,22 @@
 #include <cassert>
 #include <cstddef>
 #include <cxx/decl/_JSONBase.h>
-#include <iostream>
 #include <list>
 #include <map>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
+
 using cxx::test::Test;
 int main(int, char**) { return cxx::test::run(); }
 
 template <typename T>
 void expectJSONResult(cxx::String str, T&& expr) {
-    std::cerr << "expect: " << str << std::endl;
     std::stringstream ss;
     cxx::JSON j(std::forward<T>(expr));
     j.write(ss);
     ss.flush();
-    std::cerr << "actual: " << ss.str() << std::endl;
     assert(str == cxx::String(ss.str()));
 }
 

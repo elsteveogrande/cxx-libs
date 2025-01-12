@@ -111,6 +111,13 @@ public:
 
     CoroIterator<T> cbegin() const { return begin(); }
     CoroEndIterator<T> cend() const { return end(); }
+
+    template <class C>
+    C to() {
+        auto ret = C();
+        ret.append_range(*this);
+        return ret;
+    }
 };
 
 }  // namespace cxx

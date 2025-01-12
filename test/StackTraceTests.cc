@@ -2,7 +2,9 @@
 
 #include <cassert>
 #include <cxx/StackTrace.h>
-#include <iostream>
+#include <cxx/String.h>
+#include <list>
+#include <sstream>
 
 using cxx::test::Test;
 int main(int, char**) { return cxx::test::run(); }
@@ -11,6 +13,8 @@ Test simpleDump([] {
     cxx::StackResolver sr;
     cxx::StackTrace s;
     s.resolve(sr);
-    s.dump(std::cout);
-    return 0;
+    std::stringstream ss;
+    s.dump(ss);
+    auto lines = cxx::String(ss.str()).split('\n').to<std::list<cxx::String>>();
+    assert(lines.size() > 1);
 });

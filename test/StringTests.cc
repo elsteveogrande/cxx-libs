@@ -4,9 +4,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cxx/String.h>
-#include <iomanip>
-#include <ios>
-#include <iostream>
 #include <string>
 #include <utility>
 
@@ -16,26 +13,6 @@ int main(int, char**) { return cxx::test::run(); }
 using cxx::String;
 
 constexpr char const* kLongStringLiteral = "stringWhichHasThirtyCharacters";
-
-namespace fancydump {
-
-struct L {
-    int const n;
-    friend std::ostream& operator<<(std::ostream& os, L const& x) {
-        os << std::setw(x.n) << std::left;
-        return os;
-    };
-};
-
-struct R {
-    int const n;
-    friend std::ostream& operator<<(std::ostream& os, R const& x) {
-        os << std::setw(x.n) << std::right;
-        return os;
-    };
-};
-
-}  // namespace fancydump
 
 Test constructEmptyCStringCE([] {
     constexpr String const s;

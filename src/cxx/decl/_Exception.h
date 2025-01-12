@@ -21,7 +21,7 @@ struct Exception : std::exception {
     explicit Exception(std::string message);
 
     char const* what() const noexcept override { return message.data(); }
-    void dump() const;
+    void dump(std::ostream& os = std::cerr) const;
 };
 
 namespace detail {

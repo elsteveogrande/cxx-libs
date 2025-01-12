@@ -10,12 +10,13 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
+// Declare types here so IDE considers this file (not a decl/ file) "authoritative"
 struct Exception;
 
-void Exception::dump() const {
+void Exception::dump(std::ostream& os) const {
     cxx::StackResolver sr;
     trace->resolve(sr);
-    trace->dump(std::cerr);
+    trace->dump(os);
 }
 
 }  // namespace cxx

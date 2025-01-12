@@ -6,9 +6,8 @@
 #include <cxx/Exception.h>
 #include <cxx/String.h>
 #include <functional>
-#include <iostream>
-#include <ostream>
 #include <ranges>
+
 using cxx::test::Test;
 int main(int, char**) { return cxx::test::run(); }
 
@@ -25,13 +24,11 @@ Test createGenAndIter([] {
     auto it = gen.begin();
     assert(it != end);
     x = *it;
-    std::cerr << x << std::endl;
     assert(x == 1);
 
     ++it;
     assert(it != end);
     x = *it;
-    std::cerr << x << std::endl;
     assert(x == 2);
 
     ++it;
@@ -62,13 +59,11 @@ Test genTransform([] {
     auto it = gen.begin();
     assert(it != end);
     x = *it;
-    std::cerr << x << std::endl;
     assert(x == 3);
 
     ++it;
     assert(it != end);
     x = *it;
-    std::cerr << x << std::endl;
     assert(x == 6);
 
     ++it;

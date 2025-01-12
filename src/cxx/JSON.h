@@ -14,6 +14,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
+// Declare types here so IDE considers this file (not a decl/ file) "authoritative"
 struct JSON;
 
 bool ArrayRepr::arraysEqual(auto& a1, auto& a2) {
