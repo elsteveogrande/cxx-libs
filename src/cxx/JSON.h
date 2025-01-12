@@ -2,10 +2,10 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "decl/_JSONBase.h"
-#include "decl/_LinkedList.h"
-#include "decl/ref/base.h"
+#include "ref/Ref.h"
+#include "struct/LinkedList.h"
 
+#include "json/JSON.h"
 #include <cassert>
 #include <cstddef>
 #include <cxx/Generator.h>
@@ -76,7 +76,6 @@ bool ObjectProp::operator==(ObjectProp const& rhs) const {
 
 }  // namespace cxx
 
-#include "decl/_JSONRead.h"
-#include "decl/_JSONWrite.h"
-
+#include "json/parse.h"
+#include "json/write.h"
 #include <cxx/Ref.h>

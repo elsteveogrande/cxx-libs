@@ -6,7 +6,6 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
-#include <cxx/decl/_JSONBase.h>
 #include <list>
 #include <map>
 #include <optional>

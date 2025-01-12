@@ -7,4 +7,4 @@ template <typename T>
 class Generator;
 }
 
-#include "decl/_Generator.h"
+#include "gen/Generator.h"

@@ -2,9 +2,9 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "_StackResolver.h"
-#include "prog/_SourceLoc.h"
-#include "ref/base.h"
+#include "../prog/SourceLoc.h"
+#include "../ref/Ref.h"
+#include "Resolver.h"
 
 #include <cerrno>
 #include <cstddef>

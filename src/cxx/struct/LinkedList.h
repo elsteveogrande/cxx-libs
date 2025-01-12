@@ -2,7 +2,7 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "ref/base.h"
+#include "../ref/Ref.h"
 
 #include <cassert>
 #include <concepts>

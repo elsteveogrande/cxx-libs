@@ -1,8 +1,8 @@
+#include "cxx/StackTrace.h"
+#include "cxx/String.h"
 #include "cxx/test/Test.h"
 
 #include <cassert>
-#include <cxx/StackTrace.h>
-#include <cxx/String.h>
 #include <list>
 #include <sstream>
 

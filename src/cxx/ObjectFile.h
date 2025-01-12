@@ -1,15 +1,15 @@
 #pragma once
-#include <cstdint>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "decl/io/_Bytes.h"
-#include "decl/io/_File.h"
-#include "decl/prog/_MachO64.h"
-#include "decl/prog/_ObjectFile.h"
-#include "decl/prog/_SourceLoc.h"
-#include "decl/ref/base.h"
+#include "io/Bytes.h"
+#include "io/File.h"
+#include "prog/MachO64.h"
+#include "prog/ObjectFile.h"
+#include "prog/SourceLoc.h"
+#include "ref/Ref.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <cxxabi.h>
 #include <string>

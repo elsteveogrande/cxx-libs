@@ -9,10 +9,10 @@ class String;
 
 }  // namespace cxx
 
-#include "decl/string/base.h"
-#include "decl/string/compare.h"
-#include "decl/string/concat.h"
-#include "decl/string/ctor.h"
-#include "decl/string/split.h"
+#include "string/String.h"
+#include "string/compare.h"
+#include "string/concat.h"
+#include "string/ctor.h"
+#include "string/split.h"
 
 #include <cxx/Ref.h>

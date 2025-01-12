@@ -1,9 +1,9 @@
+#include "cxx/String.h"
 #include "cxx/test/Test.h"
 
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <cxx/String.h>
 #include <string>
 #include <utility>
 

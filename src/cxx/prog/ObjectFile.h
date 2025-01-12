@@ -2,9 +2,9 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "../io/_Bytes.h"
-#include "../io/_File.h"
-#include "_SourceLoc.h"
+#include "../io/Bytes.h"
+#include "../io/File.h"
+#include "SourceLoc.h"
 
 #include <cstdint>
 #include <string>
