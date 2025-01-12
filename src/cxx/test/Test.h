@@ -3,6 +3,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include <cxx/Exception.h>
+#include <dlfcn.h>
 #include <functional>
 #include <list>
 #include <utility>
@@ -36,7 +37,15 @@ struct Test {
 
 int Tests::run(Test& test) {
     // try { ... } catch (AssertFailed&) {}
-    printf("%p\n", &test);
+
+    Dl_info info;
+    dladdr(&test, &info);
+    if (info.dli_sname) {
+        printf("%s\n", info.dli_sname);
+    } else {
+        printf("%p\n", &test);
+    }
+
     test.func_();
     return 0;
 }
