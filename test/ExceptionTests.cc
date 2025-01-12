@@ -1,24 +1,24 @@
-#include <cassert>
-#include <cxx/Exception.h>
-#include <string>
+#include "cxx/Exception.h"
+#include "cxx/test/Test.h"
 
-namespace {
+#include <cassert>
+#include <string>
+using cxx::test::Test;
+int main(int, char**) { return cxx::test::run(); }
+
 struct TestException : cxx::Exception {
     TestException() : cxx::Exception("test") {}
 };
-}  // namespace
 
-namespace test {
 void func2() { throw TestException(); }
 void func1() { func2(); }
-}  // namespace test
 
-int main() {
+Test testSimpleThrowCatch([] {
     try {
-        test::func1();
+        func1();
     } catch (TestException const& e) {
         assert(std::string("test") == e.what());
         return 0;
     }
     return 1;
-}
+});

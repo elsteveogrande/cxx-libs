@@ -4,49 +4,34 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include "_Bytes.h"
 
-#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace cxx {
 
 /** A read-only reader for a `Bytes` object, providing (some) binary stream-like functions. */
 struct Cursor final {
     // clang-format off
-    BytesRef owner_;                 // owns the actual bytes; we retain a ref to keep it alive
+    Bytes const* owner_;            // owns the actual bytes
     uint8_t const* const base_ {};  // start of accessible window
     size_t const size_ {};          // max size of this cursor's window; last byte is at (base + size - 1)
     size_t offset_ {0};             // initially zero, adjusted during reads
 
     ~Cursor() noexcept = default;
 
-    Cursor() = default;
-
-    Cursor(BytesRef owner, uint8_t const* base, size_t size)
-        : owner_(std::move(owner)), base_(base), size_(size) {}
+    Cursor(Bytes const* owner, uint8_t const* base, size_t size)
+        : owner_(owner), base_(base), size_(size) {}
 
     Cursor(Cursor const& rhs)
         : owner_(rhs.owner_), base_(rhs.base_ + rhs.offset_), size_(rhs.size_ - rhs.offset_) {}
 
     Cursor& operator=(Cursor const& rhs) { return *new (this) Cursor(rhs); }
 
-    bool operator==(Cursor const& rhs) const {
-        if (this->owner_.get() != rhs.owner_.get()) {
-            throw std::logic_error("comparing cursors from different owners");
-        }
-        return (base_ + offset_) == (rhs.base_ + rhs.offset_);
-    }
-
-    bool operator<(Cursor const& rhs) const {
-        if (this->owner_.get() != rhs.owner_.get()) {
-            throw std::logic_error("comparing cursors from different owners");
-        }
-        return (base_ + offset_) < (rhs.base_ + rhs.offset_);
-    }
+    bool operator==(Cursor const& rhs) const { return (base_ + offset_) == (rhs.base_ + rhs.offset_); }
+    bool operator<(Cursor const& rhs) const { return (base_ + offset_) < (rhs.base_ + rhs.offset_); }
 
     uint8_t peekU8(size_t adj = 0) const { return *(base_ + offset_ + adj); }
     uint16_t peekU16(size_t adj = 0) const { return uint16_t(peekU8(adj + 1)) << 8 | (uint16_t(peekU8(adj))); }
@@ -141,6 +126,5 @@ struct Cursor final {
 
     // clang-format on
 };
-static_assert(std::regular<Cursor>);
 
 }  // namespace cxx

@@ -42,7 +42,7 @@ struct StackResolver final {
     uintptr_t vmaSlide;  // for main program image only
 
     // Contains the program itself, extra DWARF debug files, shared libs, ...
-    std::vector<BinarySP> binaries;
+    std::vector<Ref<Binary>> binaries;
 
     StackResolver() {
         detail::DYLD dyld;

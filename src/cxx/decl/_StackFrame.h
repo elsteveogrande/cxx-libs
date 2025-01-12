@@ -4,6 +4,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include "_SourceLoc.h"
 #include "_StackResolver.h"
+#include "ref/base.h"
 
 #include <cerrno>
 #include <cstddef>
@@ -24,7 +25,7 @@ namespace cxx {
 
 struct StackFrame final {
     void const* address {nullptr};
-    std::shared_ptr<StackFrame> next {};
+    Ref<StackFrame> next {};
     // All these are mutable and only filled in when `resolve` is called,
     // so `resolve` can be used within a `catch (cxx::Exception const& ...)`
     std::string mutable symbol {};

@@ -1,6 +1,7 @@
 #include "cxx/Generator.h"
 #include "cxx/JSON.h"
 #include "cxx/String.h"
+#include "cxx/test/Test.h"
 
 #include <array>
 #include <cassert>
@@ -13,6 +14,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+using cxx::test::Test;
+int main(int, char**) { return cxx::test::run(); }
 
 template <typename T>
 void expectJSONResult(cxx::String str, T&& expr) {
@@ -25,9 +28,7 @@ void expectJSONResult(cxx::String str, T&& expr) {
     assert(str == cxx::String(ss.str()));
 }
 
-int main() {
-    // Writing JSON
-
+Test writingBasicTypes([] {
     expectJSONResult("null", nullptr);
 
     expectJSONResult("true", true);
@@ -45,7 +46,9 @@ int main() {
     expectJSONResult("null", maybe);
 
     expectJSONResult("\"hello world\"", "hello world");
+});
 
+Test writingArrays([] {
     expectJSONResult("[66]", std::array<int, 1> {66});
     expectJSONResult("[1,2,3]", std::array<int, 3> {1, 2, 3});
     expectJSONResult("[1,2,3]", std::vector<int> {1, 2, 3});
@@ -53,7 +56,9 @@ int main() {
 
     expectJSONResult(
             R"(["hello","world","a","b","c","d","e"])", cxx::String("hello world a b c d e").split(' '));
+});
 
+Test writingObjects([] {
     expectJSONResult(R"({"x":"y"})", std::map<cxx::String, cxx::String> {{"x", "y"}});
     expectJSONResult(R"({"x":"y"})", std::map<std::string, std::string> {{"x", "y"}});
     expectJSONResult(R"({"x":"y"})", std::map<cxx::String, cxx::String> {{"x", "y"}});
@@ -74,10 +79,4 @@ int main() {
 
     auto const json = R"({"bools":[false,true],"null1":null,"null2":null,"numberArray":[-1.5,2],"someObject":{"x":["y","z"]}})";
     expectJSONResult(json, JSONableStruct().genJSONProps());
-
-    // Parsing JSON
-
-    // assert(cxx::JSON::parse("null") == cxx::JSON(nullptr));
-
-    return 0;
-}
+});

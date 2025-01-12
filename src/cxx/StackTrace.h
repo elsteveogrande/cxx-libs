@@ -9,6 +9,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "decl/_StackFrame.h"
 #include "decl/_StackResolver.h"
 #include "decl/_StackTrace.h"
+#include "decl/ref/base.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -29,7 +30,7 @@ struct StackResolver;
 void StackResolver::findBinaries(std::string const& thisProg) {
     // minor TODO: looks like `binaries` gets some dupes.
 
-    BinarySP bin;
+    Ref<Binary> bin;
 
     // If the program itself can be opened, add that
     bin = Binary::open(thisProg, vmaSlide);
@@ -54,8 +55,8 @@ void StackResolver::findBinaries(std::string const& thisProg) {
 }
 
 void getLocations(std::map<uintptr_t, SourceLoc>* out, Binary const& binary) {
-    SectionSP debugLine;
-    SectionSP debugLineStr;
+    Ref<Section> debugLine;
+    Ref<Section> debugLineStr;
     for (auto section : binary.sections()) {
         if (section->name() == ".debug_line") { debugLine = section; }
         if (section->name() == "__debug_line") { debugLine = section; }
@@ -113,18 +114,18 @@ void StackFrame::resolve(StackResolver& sr) const {
 }
 
 StackTrace::StackTrace() {
-    void* frameAddr = __builtin_frame_address(0);     // Starting at current frame,
-    auto* nextFramePtr = &this->frame;                // build linked list of frames.
-    while (frameAddr) {                               // Until we hit the end...:
-        void** ptr = (void**) frameAddr;              // start poking around in the stack
-        auto ipNext = ((uintptr_t) (ptr[1]));         // find IP of instruction after call
-        if (!ipNext) { break; }                       // (if no return address, we're at end).
-        void* ip = (void*) (ipNext - 1);              // Back up to last byte of prev instruction
-        auto frame = std::make_shared<StackFrame>();  // create a new frame
-        frame->address = ip;                          // set address to (near) the calling insn
-        *nextFramePtr = frame;                        // append frame to the list
-        nextFramePtr = &frame->next;                  // ready to append next frame (if any)
-        frameAddr = ptr[0];                           // continue walking the stack
+    void* frameAddr = __builtin_frame_address(0);  // Starting at current frame,
+    auto* nextFramePtr = &this->frame;             // build linked list of frames.
+    while (frameAddr) {                            // Until we hit the end...:
+        void** ptr = (void**) frameAddr;           // start poking around in the stack
+        auto ipNext = ((uintptr_t) (ptr[1]));      // find IP of instruction after call
+        if (!ipNext) { break; }                    // (if no return address, we're at end).
+        void* ip = (void*) (ipNext - 1);           // Back up to last byte of prev instruction
+        auto frame = Ref<StackFrame>::make();      // create a new frame
+        frame->address = ip;                       // set address to (near) the calling insn
+        *nextFramePtr = frame;                     // append frame to the list
+        nextFramePtr = &frame->next;               // ready to append next frame (if any)
+        frameAddr = ptr[0];                        // continue walking the stack
     }
 }
 

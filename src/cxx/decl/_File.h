@@ -4,6 +4,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include "_Bytes.h"
 #include "_Cursor.h"
+#include "ref/base.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -16,10 +17,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-struct File;
-using FileSP = std::shared_ptr<File const>;
-
-struct File : Bytes, std::enable_shared_from_this<File> {
+struct File : Bytes {
     std::string path_;
     int const fd_;
     size_t const size_;
@@ -40,13 +38,13 @@ struct File : Bytes, std::enable_shared_from_this<File> {
             , size_(fd_ == -1 ? 0 : ::lseek(fd_, 0, SEEK_END))
             , mmap_(fd_ == -1 ? nullptr : ::mmap(nullptr, size_, PROT_READ, MAP_SHARED, fd_, 0)) {}
 
-    static FileSP open(std::string path) {
-        auto ret = std::make_shared<File>(path);
+    static Ref<File> open(std::string path) {
+        auto ret = Ref<File>::make(path);
         if (ret->valid()) { return ret; }
         return {};
     }
 };
 
-Cursor File::cur() const { return {shared_from_this(), (uint8_t const*) mmap_, size_}; }
+Cursor File::cur() const { return {this, (uint8_t const*) mmap_, size_}; }
 
 }  // namespace cxx

@@ -4,13 +4,13 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include "_StackFrame.h"
 #include "_StackResolver.h"
+#include "ref/base.h"
 
 #include <cstdint>
 #include <cstdlib>
 #include <cxxabi.h>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <string>
 
 namespace cxx {
@@ -26,7 +26,7 @@ std::string demangle(char const* name) {
 
 struct StackTrace final {
     // clang-format off
-    std::shared_ptr<StackFrame> frame {};
+    Ref<StackFrame> frame {};
     StackTrace();
 
     using value_type = StackFrame;

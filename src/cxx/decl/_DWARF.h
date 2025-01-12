@@ -5,6 +5,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "_Cursor.h"
 #include "_ObjectFile.h"
 #include "_SourceLoc.h"
+#include "ref/base.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -17,11 +18,10 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 namespace cxx {
 
 struct Section;
-using SectionSP = std::shared_ptr<Section const>;
 
 struct DWARF {
     static void
-    evalLineProg(std::map<uintptr_t, SourceLoc>* out, SectionSP debugLine, SectionSP debugLineStr);
+    evalLineProg(std::map<uintptr_t, SourceLoc>* out, Ref<Section> debugLine, Ref<Section> debugLineStr);
 };
 
 }  // namespace cxx
@@ -58,7 +58,8 @@ void getFilenames(std::vector<std::string>* files, Cursor& data, Cursor const& s
 
 }  // namespace detail
 
-void DWARF::evalLineProg(std::map<uintptr_t, SourceLoc>* out, SectionSP debugLine, SectionSP debugLineStr) {
+void DWARF::evalLineProg(
+        std::map<uintptr_t, SourceLoc>* out, Ref<Section> debugLine, Ref<Section> debugLineStr) {
     auto data = debugLine->contents();
     auto const stringData = debugLineStr->contents();
 

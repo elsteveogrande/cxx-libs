@@ -3,16 +3,14 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include <cstdint>
-#include <memory>
 #include <string>
 
 namespace cxx {
 
 struct Binary;
-using BinarySP = std::shared_ptr<Binary const>;
 
 struct SourceLoc final {
-    BinarySP binary;
+    Binary const* binary;
     uintptr_t virtualAddr;  // for the main program, this is adjusted (see DYLD.getImageVMAddrSlide)
     std::string sourceFile {};
     unsigned line {0};

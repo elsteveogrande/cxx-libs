@@ -4,15 +4,10 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 
 namespace cxx {
 
-template <typename T>
-class Ref;
-
 struct Bytes;
-using BytesRef = std::shared_ptr<Bytes const>;
 struct Cursor;
 struct File;
 
@@ -22,7 +17,7 @@ struct Bytes {
     virtual Cursor cur() const = 0;
 };
 
-struct ByteBuffer final : Bytes, std::enable_shared_from_this<ByteBuffer> {
+struct ByteBuffer final : Bytes {
     uint8_t const* const data_;
     size_t const size_;
     ByteBuffer(size_t size) : data_(new uint8_t[size]), size_(size) {}

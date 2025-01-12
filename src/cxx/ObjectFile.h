@@ -8,6 +8,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "decl/_MachO64.h"
 #include "decl/_ObjectFile.h"
 #include "decl/_SourceLoc.h"
+#include "decl/ref/base.h"
 
 #include <cstdlib>
 #include <cxxabi.h>
@@ -15,12 +16,12 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-BinarySP Binary::open(std::string const& path, uintptr_t vmaSlide) {
+Ref<Binary> Binary::open(std::string const& path, uintptr_t vmaSlide) {
     auto file = File::open(path);
     if (!file) { return {}; }
     auto magic = file->cur().u32();
     switch (magic) {
-    case 0xfeedfacf: return std::make_shared<MachOBinary64>(file, vmaSlide);
+    case 0xfeedfacf: return Ref<MachOBinary64>::make(file, vmaSlide);
     default:         return {};
     }
 }
@@ -39,3 +40,5 @@ std::string demangle(std::string const& sym) {
 // endregion
 
 }  // namespace cxx
+
+#include "Ref.h"

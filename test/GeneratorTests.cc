@@ -1,4 +1,6 @@
 #include "cxx/Generator.h"
+#include "cxx/Ref.h"
+#include "cxx/test/Test.h"
 
 #include <cassert>
 #include <cxx/Exception.h>
@@ -7,15 +9,15 @@
 #include <iostream>
 #include <ostream>
 #include <ranges>
-
-namespace {
+using cxx::test::Test;
+int main(int, char**) { return cxx::test::run(); }
 
 cxx::Generator<int> foo() {
     co_yield 1;
     co_yield 2;
 }
 
-void testCreateGenAndIter() {
+Test createGenAndIter([] {
     auto gen = foo();
     auto end = gen.end();
     int x;
@@ -34,9 +36,9 @@ void testCreateGenAndIter() {
 
     ++it;
     assert(it == end);
-}
+});
 
-void testRangeConformance() {
+Test rangeConformance([] {
     using G = cxx::Generator<int>;
     static_assert(std::ranges::range<G>);
 
@@ -48,9 +50,9 @@ void testRangeConformance() {
     (void) (end == begin);
     (void) (end != begin);
     int z = *begin;
-}
+});
 
-void testGenTransform() {
+Test genTransform([] {
     std::function<int(int)> f = [](int x) { return x * 3; };
 
     auto gen = foo() | std::views::transform(f);
@@ -71,7 +73,7 @@ void testGenTransform() {
 
     ++it;
     assert(it == end);
-}
+});
 
 struct Foo {
     unsigned x;
@@ -87,16 +89,7 @@ cxx::Generator<Bar> genBars() {
     co_yield {cxx::Ref<Foo>::make(222)};
 }
 
-void testLeaksViaYield() {
+Test noLeaksViaYield([] {
     for (auto b : genBars()) { (void) b; }
-}
-
-}  // namespace
-
-int main() {
-    testCreateGenAndIter();
-    testRangeConformance();
-    testGenTransform();
-    testLeaksViaYield();
-    return 0;
-}
+    // LSAN build will trigger an error if any leaks
+});

@@ -16,33 +16,30 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-struct MachOSection64;
-using MachOSection64SP = std::shared_ptr<MachOSection64 const>;
 struct MachOBinary64;
-using MachOBinary64SP = std::shared_ptr<MachOBinary64 const>;
 
 struct MachOSection64 final : Section {
     constexpr static size_t kSectionHeaderSize = 80;
-    MachOBinary64SP binary_;
+    MachOBinary64 const* binary_;
     Cursor const base_;
 
-    MachOSection64(MachOBinary64SP binary, Cursor base)
-            : binary_(std::move(binary))
+    MachOSection64(MachOBinary64 const* binary, Cursor base)
+            : binary_(binary)
             , base_(std::move(base)) {}
 
     Cursor cur() const override { return base_; }
     std::string name() const override;
-    BinarySP binary() const override;
+    Binary const* binary() const override;
     Cursor contents() const override;
 };
 
-struct MachOBinary64 final : Binary, std::enable_shared_from_this<MachOBinary64> {
+struct MachOBinary64 final : Binary {
     size_t loadCommands_;
 
-    MachOBinary64(FileSP file, uintptr_t vmaSlide);
+    MachOBinary64(Ref<File> file, uintptr_t vmaSlide);
     Cursor cur() const override;
 
-    std::vector<SectionSP> sections() const override;
+    std::vector<Ref<Section>> sections() const override;
     static MachOBinary64 open(std::string path);
 };
 
@@ -53,7 +50,7 @@ struct MachOBinary64 final : Binary, std::enable_shared_from_this<MachOBinary64>
     | 0xfeedfacf (magic) | (@ 4) cputype      | (@ 8) cpusubtype   | (@ 12) filetype    |
     | (@ 16) ncmds       | (@ 20) sizeofcmds  | (@ 24) flags       | (@ 28) reserved    |
 */
-MachOBinary64::MachOBinary64(FileSP file, uintptr_t vmaSlide)
+MachOBinary64::MachOBinary64(Ref<File> file, uintptr_t vmaSlide)
         : Binary(file, vmaSlide)
         , loadCommands_((cur() + 16).u32()) {}
 
@@ -70,10 +67,10 @@ Cursor MachOBinary64::cur() const { return this->file_->cur(); }
     | (@ 64) nsects      | (@ 68) flags       |   { ... followed by its sections ... }
 */
 
-std::vector<SectionSP> MachOBinary64::sections() const {
+std::vector<Ref<Section>> MachOBinary64::sections() const {
     constexpr static uint32_t kLoadSegment64 = 0x19;
 
-    std::vector<SectionSP> ret;
+    std::vector<Ref<Section>> ret;
 
     // Iterate through load commands to find segments and their contained sections.
     // Load commands are immediately after the header
@@ -88,7 +85,7 @@ std::vector<SectionSP> MachOBinary64::sections() const {
             auto nsects = cur.u32();
             cur += 4;
             while (nsects--) {
-                ret.push_back(std::make_shared<MachOSection64>(shared_from_this(), cur));
+                ret.emplace_back(Ref<MachOSection64>::make(this, cur));
                 cur += MachOSection64::kSectionHeaderSize;
             }
         } else {
@@ -112,7 +109,7 @@ std::vector<SectionSP> MachOBinary64::sections() const {
 
 std::string MachOSection64::name() const { return cur().fixedStr(16); }
 
-BinarySP MachOSection64::binary() const { return binary_; }
+Binary const* MachOSection64::binary() const { return binary_; }
 
 Cursor MachOSection64::contents() const {
     size_t offset = (cur() + 48).u32();
