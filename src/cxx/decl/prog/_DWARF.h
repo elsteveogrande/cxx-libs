@@ -2,10 +2,10 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "_Cursor.h"
+#include "../io/_Cursor.h"
+#include "../ref/base.h"
 #include "_ObjectFile.h"
 #include "_SourceLoc.h"
-#include "ref/base.h"
 
 #include <cstddef>
 #include <cstdint>

@@ -3,11 +3,11 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "decl/_Bytes.h"
-#include "decl/_File.h"
-#include "decl/_MachO64.h"
-#include "decl/_ObjectFile.h"
-#include "decl/_SourceLoc.h"
+#include "decl/io/_Bytes.h"
+#include "decl/io/_File.h"
+#include "decl/prog/_MachO64.h"
+#include "decl/prog/_ObjectFile.h"
+#include "decl/prog/_SourceLoc.h"
 #include "decl/ref/base.h"
 
 #include <cstdlib>

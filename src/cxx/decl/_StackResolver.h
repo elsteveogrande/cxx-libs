@@ -2,8 +2,8 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "_ObjectFile.h"
-#include "_SourceLoc.h"
+#include "prog/_ObjectFile.h"
+#include "prog/_SourceLoc.h"
 
 #include <cstddef>
 #include <cstdint>

@@ -2,13 +2,13 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "decl/_DWARF.h"
 #include "decl/_Exception.h"
-#include "decl/_ObjectFile.h"
-#include "decl/_SourceLoc.h"
 #include "decl/_StackFrame.h"
 #include "decl/_StackResolver.h"
 #include "decl/_StackTrace.h"
+#include "decl/prog/_DWARF.h"
+#include "decl/prog/_ObjectFile.h"
+#include "decl/prog/_SourceLoc.h"
 #include "decl/ref/base.h"
 
 #include <cstddef>
