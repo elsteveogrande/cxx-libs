@@ -9,6 +9,7 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <string>
 #include <utility>
 
@@ -30,7 +31,7 @@ constexpr void ceStringCopy(char* dest, char const* src, size_t size, size_t buf
 
 }  // namespace detail
 
-class String final {
+class String final : std::ranges::view_interface<String> {
     constexpr static size_t kSmallMax = sizeof(void*);
     constexpr static char const* kEmpty = "";
 
@@ -141,8 +142,16 @@ public:
         return data()[index];
     }
 
-    constexpr char const* begin() const { return data(); }
-    constexpr char const* end() const { return data() + size(); }
+    // std::ranges::view_interface:
+    using value_type = char;
+    using iterator = char const*;
+    using const_iterator = iterator;
+    using reference = char&;
+    using const_reference = char const&;
+    constexpr iterator begin() const { return data(); }
+    constexpr iterator end() const { return data() + size(); }
+    constexpr const_iterator cbegin() const { return data(); }
+    constexpr const_iterator cend() const { return data() + size(); }
 
     // Defined in compare.h:
     constexpr bool operator<(String const& rhs) const;
@@ -158,5 +167,9 @@ public:
 };
 static_assert(std::regular<String>);
 static_assert(sizeof(String) == 16);
+
+/** Something accepted by a `String` constructor */
+template <typename S>
+concept Stringable = requires { String(S()); };
 
 }  // namespace cxx

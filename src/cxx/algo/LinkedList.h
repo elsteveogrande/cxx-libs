@@ -5,7 +5,6 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "../ref/Ref.h"
 
 #include <cassert>
-#include <concepts>
 #include <cstddef>
 
 namespace cxx {
@@ -61,7 +60,7 @@ struct LinkedList final {
     iterator end(this auto) { return {}; }
     const_iterator cbegin() const { return {front_}; }
     const_iterator cend(this auto) { return {}; }
-    size_t size() const { return front_->size_; }
+    size_t size() const { return front_ ? front_->size_ : 0; }
 
     bool operator==(LinkedList<T> const& rhs) const {
         if (size() != rhs.size()) { return false; }

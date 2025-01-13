@@ -2,14 +2,14 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include "../struct/LinkedList.h"
+#include "../algo/LinkedList.h"
+#include "../string/String.h"
 #include "JSON.h"
 
 #include <cassert>
 #include <cstddef>
-#include <cxx/Generator.h>
-#include <cxx/String.h>
 #include <iostream>
+#include <sstream>
 
 namespace cxx {
 
@@ -45,6 +45,12 @@ void ObjectRepr::write(std::ostream& os) const {
         sep = ",";
     }
     os << '}';
+}
+
+cxx::String JSON::str() const {
+    std::stringstream ss;
+    write(ss);
+    return ss.str();
 }
 
 }  // namespace cxx

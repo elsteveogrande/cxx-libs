@@ -1,17 +1,16 @@
 #pragma once
+#include <concepts>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
-#include <concepts>
+#include "../Concepts.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <type_traits>
 
 namespace cxx {
-
-template <typename A, typename B>
-concept SameRCV = std::is_same_v<std::remove_cvref_t<A>, std::remove_cvref_t<B>>;
 
 template <typename A, typename B>
 concept Compatible = std::is_base_of_v<A, B> && (!SameRCV<A, B>);
@@ -27,13 +26,12 @@ struct Ref final {
     Block* block_ {nullptr};
 
     void clear() {
-        if (block_) {
-            if (!--block_->refs_) {
-                block_->deleter_();
-                delete block_;
-            }
-            block_ = nullptr;
+        if (!block_) { return; }
+        if (!--block_->refs_) {
+            block_->deleter_();
+            delete block_;
         }
+        block_ = nullptr;
     }
 
     template <typename U>

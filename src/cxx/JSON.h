@@ -2,46 +2,26 @@
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
+#include "Concepts.h"
+#include "algo/LinkedList.h"
+#include "gen/Generator.h"
 #include "ref/Ref.h"
-#include "struct/LinkedList.h"
+#include "string/String.h"
 
 #include "json/JSON.h"
 #include <cassert>
 #include <cstddef>
-#include <cxx/Generator.h>
-#include <cxx/String.h>
 #include <optional>
 
 namespace cxx {
 
 // Declare types here so IDE considers this file (not a decl/ file) "authoritative"
 struct JSON;
-
-bool ArrayRepr::arraysEqual(auto& a1, auto& a2) {
-    if (a1.size() != a2.size()) { return false; }
-    auto end = a1.end();
-    auto it1 = a1.begin();
-    auto it2 = a2.begin();
-    while (it1 != end) {
-        if (*it1++ != *it2++) { return false; }
-    }
-    return true;
-}
-
-bool ObjectRepr::objectsEqual(auto& a1, auto& a2) {
-    if (a1.size() != a2.size()) { return false; }
-    auto end = a1.end();
-    auto it1 = a1.begin();
-    auto it2 = a2.begin();
-    while (it1 != end) {
-        if (*it1++ != *it2++) { return false; }
-    }
-    return true;
-}
+struct ObjectProp;
 
 JSON::JSON(nullptr_t) : JSON(Ref<NullRepr>::make()) {}
 JSON::JSON(Bool auto val) : JSON(Ref<BoolRepr>::make(val)) {}
-JSON::JSON(Numberish auto val) : JSON(Ref<NumRepr>::make(val)) {}
+JSON::JSON(NumericNotBool auto val) : JSON(Ref<NumRepr>::make(val)) {}
 JSON::JSON(Stringable auto val) : JSON(Ref<StringRepr>::make(val)) {}
 
 template <typename T>

@@ -39,7 +39,7 @@ struct Exception : ExceptionBase {
 
     void dump(std::ostream& os = std::cerr) const override;
 
-    E&& operator<<(this auto&& self, auto&& val) {
+    E const& operator<<(this E const& self, auto&& val) {
         *self.buffer_ << val;
         return self;
     }
