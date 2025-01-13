@@ -7,15 +7,16 @@
 using cxx::test::Test;
 int main(int, char**) { return cxx::test::run(); }
 
-struct TestException : cxx::Exception {
-    TestException() : cxx::Exception("test") {}
-};
+struct TestException : cxx::Exception<TestException> {};
 
-void func2() { throw TestException(); }
+void func2() { throw TestException() << "Test" << "Message"; }
 void func1() { func2(); }
 
 Test testSimpleThrowCatch([] {
     try {
         func1();
-    } catch (TestException const& e) { assert(std::string("test") == e.what()); }
+    } catch (TestException const& e) {
+        //
+        assert(std::string("TestMessage") == e.what());
+    }
 });
