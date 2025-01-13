@@ -157,6 +157,24 @@ Test refFromGenerator([] {
     for (auto f : gen()) {}
 });
 
+struct TestObj {
+    int a;
+    TestObj(int a) : a(a) {}
+    TestObj(TestObj const&) = delete;
+    TestObj(TestObj&& rhs) {
+        a = rhs.a;
+        rhs.a = -1;
+    }
+};
+
+Test refFromMovedObject([] {
+    TestObj foo {1234};
+    auto ref = cxx::Ref<TestObj>::make(std::move(foo));
+    assert(ref.get() != &foo);
+    assert(ref->a == 1234);
+    assert(foo.a == -1);
+});
+
 std::atomic_bool threadsReady {false};
 std::atomic_bool thingDeleted {false};
 
