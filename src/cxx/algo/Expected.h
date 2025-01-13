@@ -10,8 +10,19 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
+/**
+ * Similar to the standard C++23 `std::expected`, but differs in several ways.
+ * Contains a union which has either the expected type `T` or an error object of type `E`.
+ * The type parameter `E` is a type which would typically be thrown, e.g. an exception
+ * (but this is not enforced).
+ *
+ * TODO: drop this when `std::expected` is available in libcxx.
+ */
+
 template <typename T, class E>
     requires DifferentRCV<T, E> struct Expected final {
+
+    // For producing compatible `noexcept` signatures on dtor / move / copy functions.
     constexpr static bool kTNoThrowCopy = std::is_nothrow_copy_constructible_v<T>;
     constexpr static bool kTNoThrowMove = std::is_nothrow_move_constructible_v<T>;
     constexpr static bool kTNoThrowDtor = std::is_nothrow_destructible_v<T>;
@@ -19,12 +30,13 @@ template <typename T, class E>
     constexpr static bool kENoThrowMove = std::is_nothrow_move_constructible_v<E>;
     constexpr static bool kENoThrowDtor = std::is_nothrow_destructible_v<E>;
 
+    // Whether the expected type is present (else error)
     bool const ok_;
 
     union Result {
         T t {};
         E e;
-        ~Result() {}
+        ~Result() noexcept(kTNoThrowDtor && kENoThrowDtor) {}
     };
     Result result_;
 

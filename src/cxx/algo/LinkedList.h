@@ -9,7 +9,14 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 
 namespace cxx {
 
-template <std::regular T>
+/**
+ * A simple forward-linked-list.
+ * Contains an object of type `T` via a reference `Ref<T>`.
+ *
+ * TODO: make this a doubly-linked list?  Might cause problems unless we get a `Weak` ref type
+ * TODO: make thread-safe, lock-free, (wait-free?)
+ */
+template <typename T>
 struct LinkedList final {
     template <typename U = T>
     struct Node {
@@ -21,12 +28,7 @@ struct LinkedList final {
     template <typename U = T>
     struct Iterator {
         Ref<Node<U>> node_;
-
-        ~Iterator() noexcept = default;
-        Iterator() noexcept = default;
         Iterator(Ref<Node<U>> const& node) noexcept : node_(node) {}
-        Iterator(Iterator const&) noexcept = default;
-        Iterator& operator=(Iterator const&) noexcept = default;
 
         U const& operator*() const { return *node_->data_; }
         Iterator<U>& operator++() {
@@ -57,7 +59,7 @@ struct LinkedList final {
     LinkedList& operator=(LinkedList const&) noexcept = default;
 
     iterator begin() const { return {front_}; }
-    iterator end(this auto) { return {}; }
+    iterator end(this auto) { return {nullptr}; }
     const_iterator cbegin() const { return {front_}; }
     const_iterator cend(this auto) { return {}; }
     size_t size() const { return front_ ? front_->size_ : 0; }

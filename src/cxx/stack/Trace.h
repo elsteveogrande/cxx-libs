@@ -24,6 +24,11 @@ std::string demangle(char const* name) {
     return ret;
 }
 
+/**
+ * Similar to the standard C++23 `std::stacktrace`, but differs in several ways.
+ * TODO: drop this when `std::stacktrace` is available in libcxx.
+ */
+
 struct StackTrace final {
     // clang-format off
     Ref<StackFrame> frame {};

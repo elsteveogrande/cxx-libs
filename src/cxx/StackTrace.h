@@ -7,9 +7,9 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 #include "prog/ObjectFile.h"
 #include "prog/SourceLoc.h"
 #include "ref/Ref.h"
-#include "stacktrace/Frame.h"
-#include "stacktrace/Resolver.h"
-#include "stacktrace/Trace.h"
+#include "stack/Frame.h"
+#include "stack/Resolver.h"
+#include "stack/Trace.h"
 
 #include <cstddef>
 #include <cstdint>

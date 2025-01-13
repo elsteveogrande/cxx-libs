@@ -3,8 +3,8 @@ static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
 #include "exc/Exception.h"
-#include "stacktrace/Resolver.h"
-#include "stacktrace/Trace.h"
+#include "stack/Resolver.h"
+#include "stack/Trace.h"
 
 #include <iostream>
 
