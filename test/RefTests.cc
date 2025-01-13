@@ -2,11 +2,13 @@
 #include "cxx/Ref.h"
 #include "cxx/test/Test.h"
 
+#include <atomic>
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -155,4 +157,35 @@ Test refFromGenerator([] {
     for (auto f : gen()) {}
 });
 
-// TODO tests which verify thread-safety
+std::atomic_bool threadsReady {false};
+std::atomic_bool thingDeleted {false};
+
+struct Thing {
+    ~Thing() { thingDeleted = true; }
+};
+
+void threadFunc(cxx::Ref<Thing> const& thing) {
+    while (!threadsReady) {}  // busy-wait
+    for (int i = 0; i < 1000000; i++) {
+        assert(!thingDeleted);
+        auto ref = thing;  // take a copy of this Ref
+        (void) ref.get();  // pretend to do stuff with this object
+        // at this point the copied Ref goes out of scope
+    }
+}
+
+Test refSharedByThreads([] {
+    auto thing = cxx::Ref<Thing>::make();
+    std::thread t1([thing] { threadFunc(thing); });
+    std::thread t2([thing] { threadFunc(thing); });
+    std::thread t3([thing] { threadFunc(thing); });
+    std::thread t4([thing] { threadFunc(thing); });
+    threadsReady = true;
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    assert(!thingDeleted);
+    thing.clear();
+    assert(thingDeleted);
+});

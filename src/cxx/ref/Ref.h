@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 static_assert(__cplusplus >= 202300L, "cxx-libs requires C++23");
 // (c) 2024 Steve O'Brien -- MIT License
 
@@ -24,9 +25,9 @@ concept Compatible = std::is_base_of_v<A, B> && (!SameRCV<A, B>);
  */
 template <typename T>
 struct Ref final {
-    struct Block {           // impl detail: this contains the object + its reference count
-        uint64_t refs_ {0};  // ref count.  TODO: make atomic
-        T* obj_ {nullptr};   // the object.  TODO: allocate T here directly
+    struct Block {  // impl detail: this contains the object + its reference count
+        std::atomic_uint64_t refs_ {0};  // ref count.
+        T* obj_ {nullptr};               // the object.  TODO: allocate T here directly
         std::function<void()> deleter_;  // need a delete function, since we do some type-puns
     };
 
@@ -105,7 +106,9 @@ struct Ref final {
     T* operator->(this auto&& self) { return self.get(); }
     T& operator*(this auto&& self) { return *self.check(); }
 
-    uint64_t _refs() const { return block_ ? block_->refs_ : 0; }
+    uint64_t _refs() const {
+        return block_ ? block_->refs_.load(std::memory_order_relaxed) : uint64_t(0);
+    }
 };
 static_assert(std::semiregular<Ref<int>>);
 
