@@ -65,11 +65,11 @@ struct LinkedList final {
     size_t size() const { return front_ ? front_->size_ : 0; }
 
     bool operator==(LinkedList<T> const& rhs) const {
-        if (size() != rhs.size()) { return false; }
-        auto a = begin();
-        auto b = rhs.begin();
-        for (; a.node_; ++a, ++b) {
-            if (*a != *b) { return false; }
+        if (size() != rhs.size()) { return false; }  // quick check: verify same size
+        auto a = begin();                            // starting points for
+        auto b = rhs.begin();                        // both lists
+        for (; a.node_; ++a, ++b) {                  // until end of both lists
+            if (*a != *b) { return false; }          // if anything not equal, return
         }
         return true;
     }

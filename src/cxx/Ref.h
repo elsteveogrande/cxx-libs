@@ -10,4 +10,17 @@ struct Ref;
 
 }  // namespace cxx
 
+#include "exc/Exception.h"
 #include "ref/Ref.h"
+
+namespace cxx {
+
+struct NullRef final : cxx::Exception<NullRef> {};
+
+template <typename T>
+auto* Ref<T>::check(this auto self) {
+    if (self.block_) { return self.block_->obj_; }
+    throw NullRef() << "ref has no value";
+}
+
+}  // namespace cxx
